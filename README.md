@@ -4,9 +4,11 @@
 
 ## Боты
 
-| Папка | Переменная включения | Токен |
-|-------|----------------------|-------|
-| `bots/wish_bot` | `WISH_BOT_ENABLED` | `WISH_BOT_TOKEN` |
+| Папка | Переменная включения | Токен | Описание |
+|-------|----------------------|-------|----------|
+| `bots/wish_bot` | `WISH_BOT_ENABLED` | `WISH_BOT_TOKEN` | [Бот желаний](bots/wish_bot/README.md) — группы, желания, i18n |
+
+Дополнительно для wish_bot: `WISH_BOT_STORAGE` (`sqlite` | `memory` | `postgres`), `WISH_BOT_SQLITE_PATH`, `DATABASE_URL` (Heroku).
 
 ## Первый запуск
 
@@ -25,20 +27,23 @@ python run.py
 ## Heroku
 
 - `Procfile`: `worker: python run.py`
-- Config Vars: те же имена, что в `env.example`
+- Config Vars: см. `env.example`
 - После деплоя: `heroku ps:scale worker=1`
+- Python: рекомендуется `.python-version` с `3.12` (см. [документацию Heroku](https://devcenter.heroku.com/articles/python-runtimes))
 
 ## Структура
 
 ```
 TelegramBots/
-├── run.py              # оркестратор, asyncio.gather по включённым ботам
+├── run.py
 ├── Procfile
 ├── requirements.txt
 ├── env.example
 └── bots/
     └── wish_bot/
         ├── main.py
-        ├── config_data/
-        └── handlers/
+        ├── handlers/
+        ├── services/
+        ├── locales/
+        └── ...
 ```
