@@ -17,6 +17,7 @@ help-text =
     /my_taken — my taken wishes
     /subscribe — notifications for new wishes in the group
     /unsubscribe — turn off notifications
+    /archive — archive of completed wishes
     /language — language
     /help — this help
 
@@ -116,6 +117,13 @@ message-wish-completed-author =
     { $message }
 
 message-wish-completed-default = Your wish has been fulfilled! 🎉
+
+message-archive-title = <b>Wish archive</b>
+message-archive-my-wishes-header = <b>My wishes</b> (completed by others):
+message-archive-fulfilled-header = <b>Completed by me</b>:
+message-archive-section-empty = — no entries
+message-archive-my-item = • «{ $wishText }» — { $name }{ $usernamePart }, { $date }
+message-archive-fulfilled-item = • «{ $wishText }» — for { $name }{ $usernamePart }, { $date }
 
 message-subscribed = You subscribed to new wishes in group «{ $name }».
 message-unsubscribed = You unsubscribed from new wishes in group «{ $name }».

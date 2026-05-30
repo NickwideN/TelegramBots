@@ -355,3 +355,31 @@ class MemoryStorage(Repository):
         return sorted(
             uid for gid, uid in self._wish_subscriptions if gid == group_id
         )
+
+    def list_completed_wishes_by_author(self, author_id: int, group_id: int) -> list[Wish]:
+        return sorted(
+            (
+                w
+                for w in self._wishes.values()
+                if w.group_id == group_id
+                and w.author_id == author_id
+                and w.status == WishStatus.COMPLETED
+                and not w.deleted
+            ),
+            key=lambda w: w.completed_at or w.id,
+            reverse=True,
+        )
+
+    def list_completed_wishes_by_taker(self, taker_id: int, group_id: int) -> list[Wish]:
+        return sorted(
+            (
+                w
+                for w in self._wishes.values()
+                if w.group_id == group_id
+                and w.taken_by_id == taker_id
+                and w.status == WishStatus.COMPLETED
+                and not w.deleted
+            ),
+            key=lambda w: w.completed_at or w.id,
+            reverse=True,
+        )

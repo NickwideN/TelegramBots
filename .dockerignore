@@ -1,0 +1,43 @@
+# Git и IDE
+.git
+.gitignore
+.vscode
+.idea
+.cursor
+
+# Секреты и локальная конфигурация
+.env
+.env.*
+!env.example
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+.eggs
+dist
+build
+.venv
+venv
+env
+ENV
+
+# Данные и логи (не в образ)
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs
+
+# Документация и Heroku (legacy)
+README.md
+bots/**/README.md
+Procfile
+runtime.txt
+
+# Прочее
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

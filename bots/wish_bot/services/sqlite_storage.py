@@ -602,3 +602,29 @@ class SqliteStorage(Repository):
                 (group_id,),
             ).fetchall()
             return [r["user_id"] for r in rows]
+
+    def list_completed_wishes_by_author(self, author_id: int, group_id: int) -> list[Wish]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT * FROM wishes
+                WHERE group_id = ? AND author_id = ? AND status = ?
+                AND {_WISH_NOT_DELETED}
+                ORDER BY completed_at DESC, id DESC
+                """,
+                (group_id, author_id, WishStatus.COMPLETED),
+            ).fetchall()
+            return [self._row_to_wish(r) for r in rows]
+
+    def list_completed_wishes_by_taker(self, taker_id: int, group_id: int) -> list[Wish]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT * FROM wishes
+                WHERE group_id = ? AND taken_by_id = ? AND status = ?
+                AND {_WISH_NOT_DELETED}
+                ORDER BY completed_at DESC, id DESC
+                """,
+                (group_id, taker_id, WishStatus.COMPLETED),
+            ).fetchall()
+            return [self._row_to_wish(r) for r in rows]

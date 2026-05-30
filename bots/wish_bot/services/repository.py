@@ -226,3 +226,11 @@ class Repository(ABC):
     @abstractmethod
     def list_wish_subscribers(self, group_id: int) -> list[int]:
         pass
+
+    @abstractmethod
+    def list_completed_wishes_by_author(self, author_id: int, group_id: int) -> list[Wish]:
+        pass
+
+    @abstractmethod
+    def list_completed_wishes_by_taker(self, taker_id: int, group_id: int) -> list[Wish]:
+        pass

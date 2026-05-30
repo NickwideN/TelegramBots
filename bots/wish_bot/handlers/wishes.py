@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, StateFilter
@@ -44,6 +45,69 @@ def _wish_list_text(i18n: TranslatorRunner, wish: Wish) -> str:
     except Exception:
         status_label = wish.status
     return f"{wish.text}\n<i>{status_label}</i>"
+
+
+def _format_datetime(dt: datetime | None) -> str:
+    if not dt:
+        return "—"
+    return dt.strftime("%d.%m.%Y %H:%M")
+
+
+def _user_display(user_id: int | None) -> tuple[str, str]:
+    if not user_id:
+        return "—", ""
+    return _author_display(user_id)
+
+
+def _build_archive_text(
+    i18n: TranslatorRunner,
+    user_id: int,
+    group_id: int,
+) -> str:
+    repo = get_repository()
+    my_wishes = repo.list_completed_wishes_by_author(user_id, group_id)
+    fulfilled = repo.list_completed_wishes_by_taker(user_id, group_id)
+
+    lines = [i18n.get("message-archive-title")]
+
+    lines.append("")
+    lines.append(i18n.get("message-archive-my-wishes-header"))
+    if my_wishes:
+        for wish in my_wishes:
+            name, username_part = _user_display(wish.taken_by_id)
+            lines.append(
+                i18n.get(
+                    "message-archive-my-item",
+                    wishText=wish.text,
+                    name=name,
+                    usernamePart=username_part,
+                    date=_format_datetime(wish.completed_at),
+                ),
+            )
+    else:
+        lines.append(i18n.get("message-archive-section-empty"))
+
+    lines.append("")
+    lines.append(i18n.get("message-archive-fulfilled-header"))
+    if fulfilled:
+        for wish in fulfilled:
+            name, username_part = _user_display(wish.author_id)
+            lines.append(
+                i18n.get(
+                    "message-archive-fulfilled-item",
+                    wishText=wish.text,
+                    name=name,
+                    usernamePart=username_part,
+                    date=_format_datetime(wish.completed_at),
+                ),
+            )
+    else:
+        lines.append(i18n.get("message-archive-section-empty"))
+
+    text = "\n".join(lines)
+    if len(text) > 4000:
+        return text[:3990] + "\n…"
+    return text
 
 
 def _author_display(author_id: int) -> tuple[str, str]:
@@ -356,6 +420,22 @@ async def callback_delete_wish(
     await callback.answer(i18n.get("message-wish-deleted"))
     if callback.message:
         await callback.message.delete()
+
+
+@router.message(Command(commands=["archive"]))
+async def cmd_archive(
+    message: Message,
+    i18n: TranslatorRunner,
+    user: User,
+    current_group: Group | None,
+) -> None:
+    """Архив выполненных желаний в текущей группе."""
+    if current_group is None:
+        await answer_with_retry(message, i18n.get("message-no-group"))
+        return
+
+    text = _build_archive_text(i18n, user.telegram_id, current_group.id)
+    await answer_with_retry(message, text)
 
 
 @router.message(Command(commands=["my_taken"]))

@@ -8,7 +8,7 @@
 |-------|----------------------|-------|----------|
 | `bots/wish_bot` | `WISH_BOT_ENABLED` | `WISH_BOT_TOKEN` | [Бот желаний](bots/wish_bot/README.md) — группы, желания, i18n |
 
-Дополнительно для wish_bot: `WISH_BOT_STORAGE` (`sqlite` | `memory` | `postgres`), `WISH_BOT_SQLITE_PATH`, `DATABASE_URL` (Heroku).
+Дополнительно для wish_bot: `WISH_BOT_STORAGE` (`sqlite` | `memory` | `postgres`), `WISH_BOT_SQLITE_PATH`, `DATABASE_URL` (Cloud SQL).
 
 ## Первый запуск
 
@@ -24,19 +24,23 @@ cp env.example .env
 python run.py
 ```
 
-## Heroku
+## Docker / Google Cloud
 
-- `Procfile`: `worker: python run.py`
-- Config Vars: см. `env.example`
-- После деплоя: `heroku ps:scale worker=1`
-- Python: рекомендуется `.python-version` с `3.12` (см. [документацию Heroku](https://devcenter.heroku.com/articles/python-runtimes))
+Сборка и локальный запуск образа:
+
+```bash
+docker build -t telegram-bots .
+docker run --rm --env-file .env telegram-bots
+```
+
+Переменные окружения задаются в Cloud Run (см. `env.example`), не кладите `.env` в образ.
 
 ## Структура
 
 ```
 TelegramBots/
 ├── run.py
-├── Procfile
+├── Dockerfile
 ├── requirements.txt
 ├── env.example
 └── bots/

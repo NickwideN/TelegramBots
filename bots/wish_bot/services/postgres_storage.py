@@ -103,3 +103,9 @@ class PostgresStorage(Repository):
 
     def list_wish_subscribers(self, group_id: int) -> list[int]:
         raise StorageNotConfiguredError()
+
+    def list_completed_wishes_by_author(self, author_id: int, group_id: int) -> list[Wish]:
+        raise StorageNotConfiguredError()
+
+    def list_completed_wishes_by_taker(self, taker_id: int, group_id: int) -> list[Wish]:
+        raise StorageNotConfiguredError()
