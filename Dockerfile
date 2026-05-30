@@ -13,7 +13,4 @@ COPY . .
 
 RUN mkdir -p bots/wish_bot/data
 
-# Cloud Run: PORT для будущего webhook-режима
-ENV PORT=8080
-
 CMD ["python", "run.py"]
