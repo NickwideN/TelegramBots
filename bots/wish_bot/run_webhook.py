@@ -16,9 +16,16 @@ from config.settings import create_repository
 
 logger = logging.getLogger(__name__)
 
+_APP_READY_KEY = "wish_bot_ready"
 
-async def health_handler(_request: web.Request) -> web.Response:
-    return web.Response(text="ok")
+
+async def health_handler(request: web.Request) -> web.Response:
+    if request.app.get(_APP_READY_KEY):
+        return web.Response(text="ok")
+    return web.Response(
+        text="starting or database not connected — see logs",
+        status=503,
+    )
 
 
 def _log_startup_config(config: Config) -> None:
@@ -45,7 +52,10 @@ def _validate_webhook_config(config: Config) -> None:
             "WISH_BOT_TOKEN is not set. Add it in Cloud Run → Variables and secrets."
         )
     if config.storage.backend == "postgres" and not config.storage.database_url:
-        raise RuntimeError("DATABASE_URL is required when DB_BACKEND=postgres.")
+        raise RuntimeError(
+            "Postgres requires DATABASE_URL or "
+            "CLOUD_SQL_CONNECTION_NAME + POSTGRES_USER + POSTGRES_PASSWORD."
+        )
     if not config.webhook.base_url:
         logger.warning(
             "WEBHOOK_URL is not set — HTTP server will start, but Telegram updates "
@@ -63,6 +73,7 @@ def _build_app(config: Config) -> tuple[web.Application, Bot, Dispatcher, str | 
     )
 
     app = web.Application()
+    app[_APP_READY_KEY] = False
     app.router.add_get("/health", health_handler)
 
     webhook_handler = SimpleRequestHandler(
@@ -100,10 +111,14 @@ async def _serve(config: Config) -> None:
                 drop_pending_updates=True,
             )
             logger.info("wish_bot: webhook set to %s", webhook_url)
+
+        app[_APP_READY_KEY] = True
+        logger.info("wish_bot: ready")
     except Exception:
-        logger.exception("wish_bot: init after HTTP listen failed")
-        await runner.cleanup()
-        raise
+        logger.exception(
+            "wish_bot: database or Telegram init failed — /health returns 503, "
+            "bot will not answer until Cloud SQL is configured"
+        )
 
     try:
         await asyncio.Event().wait()

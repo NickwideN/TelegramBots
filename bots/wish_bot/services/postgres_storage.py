@@ -52,7 +52,11 @@ class PostgresStorage(Repository):
 
     @contextmanager
     def _connect(self) -> Iterator[psycopg.Connection]:
-        with psycopg.connect(self._database_url, row_factory=dict_row) as conn:
+        with psycopg.connect(
+            self._database_url,
+            connect_timeout=15,
+            row_factory=dict_row,
+        ) as conn:
             yield conn
 
     def _init_db(self) -> None:
