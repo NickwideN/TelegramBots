@@ -11,9 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p bots/wish_bot/data
+RUN mkdir -p data
 
 ENV BOT_MODE=webhook \
+    DB_BACKEND=postgres \
     PORT=8080 \
     WEBHOOK_HOST=0.0.0.0 \
     WEBHOOK_PATH=/webhook

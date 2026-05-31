@@ -23,7 +23,7 @@ def _log_startup_config(config: Config) -> None:
     token = config.tg_bot.token or ""
     masked = f"{token[:8]}…" if len(token) > 8 else "(empty)"
     logger.info(
-        "config: BOT_MODE=%s storage=%s PORT=%s WEBHOOK_URL=%s token=%s",
+        "config: BOT_MODE=%s DB_BACKEND=%s PORT=%s WEBHOOK_URL=%s token=%s",
         config.bot_mode,
         config.storage.backend,
         config.webhook.port,
@@ -42,11 +42,8 @@ def _validate_webhook_config(config: Config) -> None:
         raise RuntimeError(
             "WISH_BOT_TOKEN is not set. Add it in Cloud Run → Variables and secrets."
         )
-    if config.storage.backend.lower() == "postgres":
-        raise RuntimeError(
-            "WISH_BOT_STORAGE=postgres is not implemented yet. "
-            "Use memory or sqlite for now."
-        )
+    if config.storage.backend == "postgres" and not config.storage.database_url:
+        raise RuntimeError("DATABASE_URL is required when DB_BACKEND=postgres.")
     if not config.webhook.base_url:
         logger.warning(
             "WEBHOOK_URL is not set — HTTP server will start, but Telegram updates "

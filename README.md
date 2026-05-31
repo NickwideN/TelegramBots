@@ -2,13 +2,25 @@
 
 Рабочие Telegram-боты (aiogram 3). Один репозиторий, общий `.venv`, запуск через оркестратор `run.py`.
 
+## Общие переменные (все боты)
+
+| Переменная | Описание |
+|------------|----------|
+| `BOT_MODE` | `polling` (локально) или `webhook` (Cloud Run) — **один режим для всех ботов** |
+| `DB_BACKEND` | `sqlite` или `postgres` |
+| `SQLITE_PATH` | Путь к файлу SQLite (по умолчанию `data/telegram_bots.db`) |
+| `DATABASE_URL` | Строка подключения Postgres (Cloud SQL) |
+| `WEBHOOK_*`, `PORT` | Настройки webhook (см. `env.example`) |
+
+Схемы БД (новая установка): [`schema.sqlite.sql`](bots/wish_bot/services/schema.sqlite.sql), [`schema.sql`](bots/wish_bot/services/schema.sql) (Postgres).
+
+Инкрементальные миграции: [`db/migrations/`](db/migrations/README.md) (`sqlite/` и `postgres/`).
+
 ## Боты
 
 | Папка | Переменная включения | Токен | Описание |
 |-------|----------------------|-------|----------|
 | `bots/wish_bot` | `WISH_BOT_ENABLED` | `WISH_BOT_TOKEN` | [Бот желаний](bots/wish_bot/README.md) — группы, желания, i18n |
-
-Дополнительно для wish_bot: `WISH_BOT_STORAGE` (`sqlite` | `memory` | `postgres`), `WISH_BOT_SQLITE_PATH`, `DATABASE_URL` (Cloud SQL).
 
 ## Первый запуск
 
@@ -24,37 +36,23 @@ cp env.example .env
 python run.py
 ```
 
-По умолчанию `BOT_MODE=polling`. Для Cloud Run — `BOT_MODE=webhook` и `WEBHOOK_URL` (см. `env.example`).
-
 ## Docker / Google Cloud
-
-Сборка и локальный запуск образа:
 
 ```bash
 docker build -t telegram-bots .
-# локально с polling (как на машине):
 docker run --rm --env-file .env -e BOT_MODE=polling telegram-bots
-# как на Cloud Run (нужны WEBHOOK_URL и доступный URL для Telegram):
-docker run --rm --env-file .env -e BOT_MODE=webhook -p 8080:8080 telegram-bots
 ```
 
-В Cloud Run задайте переменные: `BOT_MODE=webhook`, `WEBHOOK_URL=https://ваш-сервис.run.app`, `WEBHOOK_SECRET`, `WISH_BOT_TOKEN`, `PORT=8080`. После первого деплоя проверьте `GET /health` и `getWebhookInfo`.
-
-Переменные окружения задаются в Cloud Run, не кладите `.env` в образ.
+Cloud Run: `BOT_MODE=webhook`, `DB_BACKEND=postgres`, `DATABASE_URL`, `WEBHOOK_URL`, `WISH_BOT_TOKEN`, Cloud SQL connection.
 
 ## Структура
 
 ```
 TelegramBots/
+├── config/           # общие настройки и create_repository()
 ├── run.py
+├── data/             # SQLite по умолчанию
 ├── Dockerfile
-├── requirements.txt
-├── env.example
 └── bots/
     └── wish_bot/
-        ├── main.py
-        ├── handlers/
-        ├── services/
-        ├── locales/
-        └── ...
 ```

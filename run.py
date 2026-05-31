@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 
+from config.settings import load_app_settings
+
 logging.basicConfig(
     level=logging.INFO,
     format="[{asctime}] #{levelname:8} {filename}:{lineno} - {name} - {message}",
@@ -13,10 +15,6 @@ logger = logging.getLogger(__name__)
 
 def _is_enabled(name: str, default: str = "0") -> bool:
     return os.getenv(name, default).lower() in ("1", "true", "yes", "on")
-
-
-def _bot_mode() -> str:
-    return os.getenv("BOT_MODE", "polling").strip().lower()
 
 
 async def _run_polling() -> None:
@@ -31,7 +29,7 @@ if __name__ == "__main__":
         logger.error("Нет включённых ботов. Проверьте переменные *_BOT_ENABLED в .env")
         raise SystemExit(1)
 
-    mode = _bot_mode()
+    mode = load_app_settings().bot_mode
     if mode == "webhook":
         from bots.wish_bot.run_webhook import main as run_wish_webhook
 

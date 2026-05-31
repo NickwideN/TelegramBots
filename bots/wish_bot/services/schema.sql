@@ -1,4 +1,4 @@
--- Схема для Heroku Postgres (фаза 5)
+-- Схема PostgreSQL (Cloud SQL). Применяется при старте PostgresStorage.
 
 CREATE TABLE IF NOT EXISTS groups (
     id SERIAL PRIMARY KEY,
