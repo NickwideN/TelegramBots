@@ -44,7 +44,7 @@ docker build -t telegram-bots .
 docker run --rm --env-file .env -e BOT_MODE=polling telegram-bots
 ```
 
-Cloud Run: `BOT_MODE=webhook`, `DB_BACKEND=postgres`, `WEBHOOK_URL`, `WISH_BOT_TOKEN`. В **Edit service → Connections** добавить инстанс Cloud SQL. Строка подключения: `postgresql://USER:PASS@/DB?host=/cloudsql/PROJECT:REGION:INSTANCE` (без префикса `DATABASE_URL=` в значении переменной).
+Cloud Run: `BOT_MODE=webhook`, `DB_BACKEND=postgres`, `WEBHOOK_URL`, `WISH_BOT_TOKEN`, **Connections** → Cloud SQL. `DATABASE_URL` как `postgresql://USER:PASS@/DB?host=/cloudsql/PROJECT:REGION:INSTANCE`. Service account Cloud Run нужна роль **Cloud SQL Client** (IAM).
 
 ## Структура
 

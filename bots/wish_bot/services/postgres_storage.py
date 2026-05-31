@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Iterator
 
 import psycopg
-from psycopg.rows import dict_row
 
+from bots.wish_bot.services.postgres_connect import PostgresConnectionFactory
 from bots.wish_bot.services.repository import (
     CannotBlockAdminError,
     CannotBlockSelfError,
@@ -47,17 +47,16 @@ def _normalize_database_url(database_url: str) -> str:
 
 class PostgresStorage(Repository):
     def __init__(self, database_url: str) -> None:
-        self._database_url = _normalize_database_url(database_url)
+        self._factory = PostgresConnectionFactory(_normalize_database_url(database_url))
         self._init_db()
 
     @contextmanager
     def _connect(self) -> Iterator[psycopg.Connection]:
-        with psycopg.connect(
-            self._database_url,
-            connect_timeout=15,
-            row_factory=dict_row,
-        ) as conn:
+        conn = self._factory.connect()
+        try:
             yield conn
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         schema = _SCHEMA_PATH.read_text(encoding="utf-8")

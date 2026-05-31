@@ -147,9 +147,10 @@ def create_repository(settings: AppSettings | None = None) -> Repository:
             _repository = PostgresStorage(app.storage.database_url)
         except Exception as exc:
             raise StorageNotConfiguredError(
-                "Cloud SQL connection failed. Check: (1) Cloud Run → Connections → "
-                "your Postgres instance is attached; (2) DATABASE_URL uses "
-                "host=/cloudsql/PROJECT:REGION:INSTANCE; (3) user/password/database exist. "
+                "Cloud SQL connection failed. Check: "
+                "(1) SQL user/password and database name (e.g. wish_bot_db); "
+                "(2) Cloud Run service account has role «Cloud SQL Client»; "
+                "(3) Connections → instance attached. "
                 f"Original error: {exc}"
             ) from exc
     else:
