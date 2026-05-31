@@ -9,7 +9,6 @@ from bots.wish_bot.config_data import Config
 from bots.wish_bot.handlers import commands, groups, moderation, subscriptions, wishes
 from bots.wish_bot.middlewares.group_context import GroupContextMiddleware
 from bots.wish_bot.middlewares.i18n import TranslatorRunnerMiddleware
-from config.settings import create_repository
 from bots.wish_bot.utils.bot_info import set_bot_username
 from bots.wish_bot.utils.i18n import create_translator_hub
 
@@ -17,14 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
-    """Сборка бота без сетевых вызовов (удобно до старта HTTP на Cloud Run)."""
-    repo = create_repository(config.app)
+    """Сборка бота без БД и без сетевых вызовов (БД — в on_startup webhook)."""
     backend = config.storage.backend.lower()
     if backend == "sqlite":
-        path = config.storage.sqlite_path
-        if path is None and hasattr(repo, "db_path"):
-            path = str(repo.db_path)
-        logger.info("wish_bot storage: sqlite (%s)", path)
+        logger.info("wish_bot storage: sqlite (%s)", config.storage.sqlite_path)
     else:
         logger.info("wish_bot storage: %s", backend)
 

@@ -1,7 +1,8 @@
+import asyncio
 import logging
 
 from aiohttp import web
-from aiogram import Bot
+from aiogram import Bot, Dispatcher
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 from bots.wish_bot.bootstrap import (
@@ -11,6 +12,7 @@ from bots.wish_bot.bootstrap import (
     setup_bot_app,
 )
 from bots.wish_bot.config_data import Config, load_config
+from config.settings import create_repository
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ def _validate_webhook_config(config: Config) -> None:
         )
 
 
-def _build_app(config: Config) -> web.Application:
+def _build_app(config: Config) -> tuple[web.Application, Bot, Dispatcher, str | None]:
     bot, dp, _translator_hub = setup_bot_app(config)
     webhook_path = normalize_webhook_path(config.webhook.path)
     webhook_url = (
@@ -59,25 +61,6 @@ def _build_app(config: Config) -> web.Application:
         if config.webhook.base_url
         else None
     )
-
-    async def on_startup(bot: Bot) -> None:
-        try:
-            await initialize_bot_identity(bot)
-        except Exception:
-            logger.exception("wish_bot: failed to call Telegram getMe — check WISH_BOT_TOKEN")
-            raise
-
-        if not webhook_url:
-            return
-
-        await bot.set_webhook(
-            webhook_url,
-            secret_token=config.webhook.secret,
-            drop_pending_updates=True,
-        )
-        logger.info("wish_bot: webhook set to %s", webhook_url)
-
-    dp.startup.register(on_startup)
 
     app = web.Application()
     app.router.add_get("/health", health_handler)
@@ -90,7 +73,43 @@ def _build_app(config: Config) -> web.Application:
     webhook_handler.register(app, path=webhook_path)
     setup_application(app, dp, bot=bot)
 
-    return app
+    return app, bot, dp, webhook_url
+
+
+async def _serve(config: Config) -> None:
+    app, bot, dp, webhook_url = _build_app(config)
+    host = config.webhook.host
+    port = config.webhook.port
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host=host, port=port)
+    await site.start()
+    logger.info("wish_bot: HTTP listening on %s:%s", host, port)
+
+    try:
+        create_repository(config.app)
+        logger.info("wish_bot: database ready (%s)", config.storage.backend)
+
+        await initialize_bot_identity(bot)
+
+        if webhook_url:
+            await bot.set_webhook(
+                webhook_url,
+                secret_token=config.webhook.secret,
+                drop_pending_updates=True,
+            )
+            logger.info("wish_bot: webhook set to %s", webhook_url)
+    except Exception:
+        logger.exception("wish_bot: init after HTTP listen failed")
+        await runner.cleanup()
+        raise
+
+    try:
+        await asyncio.Event().wait()
+    finally:
+        await bot.session.close()
+        await runner.cleanup()
 
 
 def main() -> None:
@@ -98,15 +117,7 @@ def main() -> None:
         config = load_config()
         _log_startup_config(config)
         _validate_webhook_config(config)
-
-        app = _build_app(config)
-        logger.info(
-            "wish_bot: listening on %s:%s (path %s)",
-            config.webhook.host,
-            config.webhook.port,
-            normalize_webhook_path(config.webhook.path),
-        )
-        web.run_app(app, host=config.webhook.host, port=config.webhook.port)
+        asyncio.run(_serve(config))
     except Exception:
         logger.exception("wish_bot: startup failed")
         raise SystemExit(1) from None

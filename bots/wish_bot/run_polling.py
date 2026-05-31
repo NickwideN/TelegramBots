@@ -2,6 +2,7 @@ import logging
 
 from bots.wish_bot.bootstrap import initialize_bot_identity, setup_bot_app
 from bots.wish_bot.config_data import load_config
+from config.settings import create_repository
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ async def run() -> None:
         )
 
     bot, dp, _translator_hub = setup_bot_app(config)
+    create_repository(config.app)
     await initialize_bot_identity(bot)
 
     await bot.delete_webhook(drop_pending_updates=True)
