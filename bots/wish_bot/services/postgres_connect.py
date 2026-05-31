@@ -1,11 +1,12 @@
-"""Подключение к Cloud SQL (официальный Connector — надёжнее сокета на Cloud Run)."""
+"""Подключение к Cloud SQL (Connector) и обычный Postgres через psycopg2."""
 
 import logging
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import unquote, urlparse
 
-import psycopg
-from psycopg.rows import dict_row
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,24 @@ class CloudSqlTarget:
     user: str
     password: str
     database: str
+
+
+class PgConnection:
+    """Обёртка с API conn.execute() — как в psycopg3, на базе psycopg2."""
+
+    def __init__(self, conn: Any) -> None:
+        self._conn = conn
+
+    def execute(self, query: str, params: Any = None) -> Any:
+        cur = self._conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(query, params)
+        return cur
+
+    def commit(self) -> None:
+        self._conn.commit()
+
+    def close(self) -> None:
+        self._conn.close()
 
 
 def parse_cloud_sql_target(database_url: str) -> CloudSqlTarget | None:
@@ -42,28 +61,24 @@ class PostgresConnectionFactory:
 
             self._connector = Connector()
             logger.info(
-                "postgres: Cloud SQL Connector → %s (db=%s, user=%s)",
+                "postgres: Cloud SQL Connector (psycopg2) → %s (db=%s, user=%s)",
                 self._cloud_sql.connection_name,
                 self._cloud_sql.database,
                 self._cloud_sql.user,
             )
         else:
-            logger.info("postgres: direct psycopg connection")
+            logger.info("postgres: direct psycopg2 connection")
 
-    def connect(self) -> psycopg.Connection:
+    def connect(self) -> PgConnection:
         if self._cloud_sql and self._connector:
-            conn = self._connector.connect(
+            raw = self._connector.connect(
                 self._cloud_sql.connection_name,
-                "psycopg",
+                "psycopg2",
                 user=self._cloud_sql.user,
                 password=self._cloud_sql.password,
                 db=self._cloud_sql.database,
             )
-            conn.row_factory = dict_row
-            return conn
+            return PgConnection(raw)
 
-        return psycopg.connect(
-            self._database_url,
-            connect_timeout=15,
-            row_factory=dict_row,
-        )
+        raw = psycopg2.connect(self._database_url, connect_timeout=15)
+        return PgConnection(raw)

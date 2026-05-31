@@ -4,9 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-import psycopg
-
-from bots.wish_bot.services.postgres_connect import PostgresConnectionFactory
+from bots.wish_bot.services.postgres_connect import PgConnection, PostgresConnectionFactory
 from bots.wish_bot.services.repository import (
     CannotBlockAdminError,
     CannotBlockSelfError,
@@ -51,7 +49,7 @@ class PostgresStorage(Repository):
         self._init_db()
 
     @contextmanager
-    def _connect(self) -> Iterator[psycopg.Connection]:
+    def _connect(self) -> Iterator[PgConnection]:
         conn = self._factory.connect()
         try:
             yield conn
@@ -61,7 +59,10 @@ class PostgresStorage(Repository):
     def _init_db(self) -> None:
         schema = _SCHEMA_PATH.read_text(encoding="utf-8")
         with self._connect() as conn:
-            conn.execute(schema)
+            for statement in schema.split(";"):
+                stmt = statement.strip()
+                if stmt:
+                    conn.execute(stmt)
             conn.commit()
 
     def upsert_user(
