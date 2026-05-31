@@ -61,11 +61,7 @@ async def _build_app(config: Config) -> web.Application:
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="[{asctime}] #{levelname:8} {filename}:{lineno} - {name} - {message}",
-        style="{",
-    )
+    """Синхронная точка входа: свой event loop, без вложенного asyncio.run."""
     config = load_config()
     _validate_webhook_config(config)
 
