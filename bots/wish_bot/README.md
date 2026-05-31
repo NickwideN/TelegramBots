@@ -25,6 +25,8 @@ pip install -r requirements.txt
 python run.py
 ```
 
+`BOT_MODE=polling` (по умолчанию) — long polling. Для Google Cloud Run: `BOT_MODE=webhook`, `WEBHOOK_URL`, `PORT=8080`, эндпоинты `/health` и `/webhook`.
+
 Только этот бот:
 
 ```bash

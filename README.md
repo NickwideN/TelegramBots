@@ -24,16 +24,23 @@ cp env.example .env
 python run.py
 ```
 
+По умолчанию `BOT_MODE=polling`. Для Cloud Run — `BOT_MODE=webhook` и `WEBHOOK_URL` (см. `env.example`).
+
 ## Docker / Google Cloud
 
 Сборка и локальный запуск образа:
 
 ```bash
 docker build -t telegram-bots .
-docker run --rm --env-file .env telegram-bots
+# локально с polling (как на машине):
+docker run --rm --env-file .env -e BOT_MODE=polling telegram-bots
+# как на Cloud Run (нужны WEBHOOK_URL и доступный URL для Telegram):
+docker run --rm --env-file .env -e BOT_MODE=webhook -p 8080:8080 telegram-bots
 ```
 
-Переменные окружения задаются в Cloud Run (см. `env.example`), не кладите `.env` в образ.
+В Cloud Run задайте переменные: `BOT_MODE=webhook`, `WEBHOOK_URL=https://ваш-сервис.run.app`, `WEBHOOK_SECRET`, `WISH_BOT_TOKEN`, `PORT=8080`. После первого деплоя проверьте `GET /health` и `getWebhookInfo`.
+
+Переменные окружения задаются в Cloud Run, не кладите `.env` в образ.
 
 ## Структура
 

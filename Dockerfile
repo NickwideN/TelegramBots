@@ -13,4 +13,11 @@ COPY . .
 
 RUN mkdir -p bots/wish_bot/data
 
+ENV BOT_MODE=webhook \
+    PORT=8080 \
+    WEBHOOK_HOST=0.0.0.0 \
+    WEBHOOK_PATH=/webhook
+
+EXPOSE 8080
+
 CMD ["python", "run.py"]
