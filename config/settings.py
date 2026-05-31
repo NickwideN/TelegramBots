@@ -1,6 +1,5 @@
 """Общие настройки репозитория: режим запуска, БД, webhook (для всех ботов)."""
 
-import logging
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -9,8 +8,6 @@ from environs import Env
 
 from bots.wish_bot.services.repository import Repository, StorageNotConfiguredError
 
-logger = logging.getLogger(__name__)
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_ENV = _REPO_ROOT / ".env"
 _DEFAULT_SQLITE_PATH = _REPO_ROOT / "data" / "telegram_bots.db"
@@ -18,25 +15,21 @@ _DEFAULT_SQLITE_PATH = _REPO_ROOT / "data" / "telegram_bots.db"
 _repository: Repository | None = None
 
 
-def _sanitize_database_url(url: str | None) -> str | None:
-    """Убирает случайное копирование «DATABASE_URL=…» в значение переменной Cloud Run."""
-    if not url:
-        return None
+def _strip_database_url_prefix(url: str) -> str:
     cleaned = url.strip()
     for prefix in ("DATABASE_URL=", "database_url="):
         if cleaned.startswith(prefix):
             cleaned = cleaned[len(prefix) :].strip()
-    return cleaned or None
+    return cleaned
 
 
 def resolve_database_url(env: Env) -> str | None:
-    """
-    DATABASE_URL или сборка для Cloud Run + Cloud SQL:
-    CLOUD_SQL_CONNECTION_NAME, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
-    """
-    direct = _sanitize_database_url(env("DATABASE_URL", None))
+    """DATABASE_URL или CLOUD_SQL_CONNECTION_NAME + POSTGRES_*."""
+    direct = env("DATABASE_URL", None)
     if direct:
-        return direct
+        direct = _strip_database_url_prefix(direct)
+        if direct:
+            return direct
 
     instance = env("CLOUD_SQL_CONNECTION_NAME", None)
     user = env("POSTGRES_USER", None)
@@ -49,15 +42,6 @@ def resolve_database_url(env: Env) -> str | None:
         f"postgresql://{quote_plus(user)}:{quote_plus(password)}"
         f"@/{dbname}?host=/cloudsql/{instance.strip()}"
     )
-
-
-def log_database_target(database_url: str) -> None:
-    """Лог без пароля: видно, указан ли сокет Cloud SQL."""
-    if "/cloudsql/" in database_url:
-        host_part = database_url.split("/cloudsql/", 1)[-1].split("?", 1)[0]
-        logger.info("postgres target: Cloud SQL socket /cloudsql/%s", host_part)
-    else:
-        logger.info("postgres target: custom DATABASE_URL (not /cloudsql/ path)")
 
 
 @dataclass
@@ -98,19 +82,12 @@ def load_app_settings(path: str | None = None) -> AppSettings:
         raise ValueError(f"Invalid DB_BACKEND={backend!r}; use 'sqlite' or 'postgres'")
 
     sqlite_path = env("SQLITE_PATH", str(_DEFAULT_SQLITE_PATH))
-    raw_database_url = env("DATABASE_URL", None)
-    database_url = resolve_database_url(env)
-    if raw_database_url and database_url and database_url != raw_database_url.strip():
-        logger.warning(
-            "DATABASE_URL contained 'DATABASE_URL=' prefix — stripped automatically. "
-            "In Cloud Run set only the connection string as the value."
-        )
 
     return AppSettings(
         bot_mode=bot_mode,
         storage=StorageSettings(
             backend=backend,
-            database_url=database_url,
+            database_url=resolve_database_url(env),
             sqlite_path=sqlite_path,
         ),
         webhook=WebhookSettings(
@@ -142,17 +119,7 @@ def create_repository(settings: AppSettings | None = None) -> Repository:
                 "Postgres requires DATABASE_URL or "
                 "CLOUD_SQL_CONNECTION_NAME + POSTGRES_USER + POSTGRES_PASSWORD"
             )
-        log_database_target(app.storage.database_url)
-        try:
-            _repository = PostgresStorage(app.storage.database_url)
-        except Exception as exc:
-            raise StorageNotConfiguredError(
-                "Cloud SQL connection failed. Check: "
-                "(1) SQL user/password and database name (e.g. wish_bot_db); "
-                "(2) Cloud Run service account has role «Cloud SQL Client»; "
-                "(3) Connections → instance attached. "
-                f"Original error: {exc}"
-            ) from exc
+        _repository = PostgresStorage(app.storage.database_url)
     else:
         raise StorageNotConfiguredError(f"Unknown DB_BACKEND: {backend}")
 

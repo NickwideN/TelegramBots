@@ -16,29 +16,9 @@ from config.settings import create_repository
 
 logger = logging.getLogger(__name__)
 
-_APP_READY_KEY = "wish_bot_ready"
 
-
-async def health_handler(request: web.Request) -> web.Response:
-    if request.app.get(_APP_READY_KEY):
-        return web.Response(text="ok")
-    return web.Response(
-        text="starting or database not connected — see logs",
-        status=503,
-    )
-
-
-def _log_startup_config(config: Config) -> None:
-    token = config.tg_bot.token or ""
-    masked = f"{token[:8]}…" if len(token) > 8 else "(empty)"
-    logger.info(
-        "config: BOT_MODE=%s DB_BACKEND=%s PORT=%s WEBHOOK_URL=%s token=%s",
-        config.bot_mode,
-        config.storage.backend,
-        config.webhook.port,
-        config.webhook.base_url or "(not set)",
-        masked,
-    )
+async def health_handler(_request: web.Request) -> web.Response:
+    return web.Response(text="ok")
 
 
 def _validate_webhook_config(config: Config) -> None:
@@ -48,18 +28,11 @@ def _validate_webhook_config(config: Config) -> None:
             "Use bots.wish_bot.run_polling for polling mode."
         )
     if not config.tg_bot.token:
-        raise RuntimeError(
-            "WISH_BOT_TOKEN is not set. Add it in Cloud Run → Variables and secrets."
-        )
+        raise RuntimeError("WISH_BOT_TOKEN is not set")
     if config.storage.backend == "postgres" and not config.storage.database_url:
         raise RuntimeError(
             "Postgres requires DATABASE_URL or "
-            "CLOUD_SQL_CONNECTION_NAME + POSTGRES_USER + POSTGRES_PASSWORD."
-        )
-    if not config.webhook.base_url:
-        logger.warning(
-            "WEBHOOK_URL is not set — HTTP server will start, but Telegram updates "
-            "will not arrive until you set WEBHOOK_URL to your Cloud Run URL and redeploy."
+            "CLOUD_SQL_CONNECTION_NAME + POSTGRES_USER + POSTGRES_PASSWORD"
         )
 
 
@@ -73,7 +46,6 @@ def _build_app(config: Config) -> tuple[web.Application, Bot, Dispatcher, str | 
     )
 
     app = web.Application()
-    app[_APP_READY_KEY] = False
     app.router.add_get("/health", health_handler)
 
     webhook_handler = SimpleRequestHandler(
@@ -96,29 +68,20 @@ async def _serve(config: Config) -> None:
     await runner.setup()
     site = web.TCPSite(runner, host=host, port=port)
     await site.start()
-    logger.info("wish_bot: HTTP listening on %s:%s", host, port)
+    logger.info("wish_bot: HTTP on %s:%s", host, port)
 
-    try:
-        create_repository(config.app)
-        logger.info("wish_bot: database ready (%s)", config.storage.backend)
+    create_repository(config.app)
+    await initialize_bot_identity(bot)
 
-        await initialize_bot_identity(bot)
-
-        if webhook_url:
-            await bot.set_webhook(
-                webhook_url,
-                secret_token=config.webhook.secret,
-                drop_pending_updates=True,
-            )
-            logger.info("wish_bot: webhook set to %s", webhook_url)
-
-        app[_APP_READY_KEY] = True
-        logger.info("wish_bot: ready")
-    except Exception:
-        logger.exception(
-            "wish_bot: database or Telegram init failed — /health returns 503, "
-            "bot will not answer until Cloud SQL is configured"
+    if webhook_url:
+        await bot.set_webhook(
+            webhook_url,
+            secret_token=config.webhook.secret,
+            drop_pending_updates=True,
         )
+        logger.info("wish_bot: webhook → %s", webhook_url)
+    else:
+        logger.warning("WEBHOOK_URL is not set — updates will not arrive")
 
     try:
         await asyncio.Event().wait()
@@ -128,11 +91,6 @@ async def _serve(config: Config) -> None:
 
 
 def main() -> None:
-    try:
-        config = load_config()
-        _log_startup_config(config)
-        _validate_webhook_config(config)
-        asyncio.run(_serve(config))
-    except Exception:
-        logger.exception("wish_bot: startup failed")
-        raise SystemExit(1) from None
+    config = load_config()
+    _validate_webhook_config(config)
+    asyncio.run(_serve(config))

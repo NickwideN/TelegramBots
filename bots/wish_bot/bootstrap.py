@@ -16,13 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
-    """Сборка бота без БД и без сетевых вызовов (БД — в on_startup webhook)."""
-    backend = config.storage.backend.lower()
-    if backend == "sqlite":
-        logger.info("wish_bot storage: sqlite (%s)", config.storage.sqlite_path)
-    else:
-        logger.info("wish_bot storage: %s", backend)
-
+    """Bot + Dispatcher без подключения к БД."""
     bot = Bot(
         token=config.tg_bot.token,
         default=DefaultBotProperties(parse_mode="HTML"),
