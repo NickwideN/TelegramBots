@@ -17,13 +17,12 @@ from bots.wish_bot.utils.i18n import create_translator_hub
 logger = logging.getLogger(__name__)
 
 
-def create_fsm_storage(config: Config) -> BaseStorage:
-    if config.bot_mode == "webhook":
-        return MemoryStorage()
+def create_fsm_storage(_config: Config) -> BaseStorage:
     return MemoryStorage()
 
 
-async def setup_bot(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
+def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
+    """Сборка бота без сетевых вызовов (удобно до старта HTTP на Cloud Run)."""
     repo = get_repository(config)
     backend = config.storage.backend.lower()
     if backend == "sqlite":
@@ -38,9 +37,6 @@ async def setup_bot(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
         token=config.tg_bot.token,
         default=DefaultBotProperties(parse_mode="HTML"),
     )
-    me = await bot.get_me()
-    if me.username:
-        set_bot_username(me.username)
 
     translator_hub = create_translator_hub()
     dp = Dispatcher(storage=create_fsm_storage(config))
@@ -58,6 +54,13 @@ async def setup_bot(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     return bot, dp, translator_hub
 
 
+async def initialize_bot_identity(bot: Bot) -> None:
+    me = await bot.get_me()
+    if me.username:
+        set_bot_username(me.username)
+    logger.info("wish_bot: bot @%s (id=%s)", me.username, me.id)
+
+
 def normalize_webhook_path(path: str) -> str:
     path = path.strip()
     if not path.startswith("/"):
@@ -67,3 +70,10 @@ def normalize_webhook_path(path: str) -> str:
 
 def build_webhook_url(base_url: str, path: str) -> str:
     return f"{base_url.rstrip('/')}{normalize_webhook_path(path)}"
+
+
+# Обратная совместимость
+async def setup_bot(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
+    bot, dp, hub = setup_bot_app(config)
+    await initialize_bot_identity(bot)
+    return bot, dp, hub

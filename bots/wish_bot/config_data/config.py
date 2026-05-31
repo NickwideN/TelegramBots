@@ -48,7 +48,7 @@ def load_config(path: str | None = None) -> Config:
 
     return Config(
         tg_bot=TgBot(
-            token=env("WISH_BOT_TOKEN"),
+            token=env.str("WISH_BOT_TOKEN", default=""),
         ),
         storage=Storage(
             backend=env("WISH_BOT_STORAGE", "sqlite"),
