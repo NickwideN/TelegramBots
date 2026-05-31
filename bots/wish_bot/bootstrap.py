@@ -2,7 +2,6 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from aiogram.fsm.storage.base import BaseStorage
 from aiogram.fsm.storage.memory import MemoryStorage
 from fluentogram import TranslatorHub
 
@@ -15,10 +14,6 @@ from bots.wish_bot.utils.bot_info import set_bot_username
 from bots.wish_bot.utils.i18n import create_translator_hub
 
 logger = logging.getLogger(__name__)
-
-
-def create_fsm_storage(_config: Config) -> BaseStorage:
-    return MemoryStorage()
 
 
 def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
@@ -39,7 +34,7 @@ def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     )
 
     translator_hub = create_translator_hub()
-    dp = Dispatcher(storage=create_fsm_storage(config))
+    dp = Dispatcher(storage=MemoryStorage())
     dp.workflow_data["_translator_hub"] = translator_hub
 
     dp.update.middleware(GroupContextMiddleware())
@@ -70,10 +65,3 @@ def normalize_webhook_path(path: str) -> str:
 
 def build_webhook_url(base_url: str, path: str) -> str:
     return f"{base_url.rstrip('/')}{normalize_webhook_path(path)}"
-
-
-# Обратная совместимость
-async def setup_bot(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
-    bot, dp, hub = setup_bot_app(config)
-    await initialize_bot_identity(bot)
-    return bot, dp, hub

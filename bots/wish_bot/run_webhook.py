@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from aiohttp import web
@@ -114,18 +113,3 @@ def main() -> None:
     except Exception:
         logger.exception("wish_bot: startup failed")
         raise SystemExit(1) from None
-
-
-async def run() -> None:
-    config = load_config()
-    _validate_webhook_config(config)
-    app = _build_app(config)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, config.webhook.host, config.webhook.port)
-    await site.start()
-    logger.info("wish_bot: webhook server started")
-    try:
-        await asyncio.Event().wait()
-    finally:
-        await runner.cleanup()

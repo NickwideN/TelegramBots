@@ -30,11 +30,9 @@ ENV
 *.log
 logs
 
-# Документация и Heroku (legacy)
+# Документация
 README.md
 bots/**/README.md
-Procfile
-runtime.txt
 
 # Прочее
 .DS_Store

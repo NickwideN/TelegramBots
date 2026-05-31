@@ -59,19 +59,16 @@ python -m bots.wish_bot.main
 - `WISH_BOT_STORAGE=sqlite` (по умолчанию) — локальный файл `bots/wish_bot/data/wish_bot.db`, данные сохраняются между перезапусками
 - `WISH_BOT_SQLITE_PATH` — свой путь к файлу SQLite (опционально)
 - `WISH_BOT_STORAGE=memory` — только RAM, для быстрых тестов
-- `WISH_BOT_STORAGE=postgres` + `DATABASE_URL` — для Heroku (реализация в `services/postgres_storage.py`, схема в `services/schema.sql`)
-
-## Heroku
-
-Config Vars: `WISH_BOT_TOKEN`, `WISH_BOT_ENABLED=1`, `WISH_BOT_STORAGE=postgres` (после addon Postgres).
-
-После добавления Heroku Postgres: `WISH_BOT_STORAGE=postgres`, `DATABASE_URL` подставится автоматически.
+- `WISH_BOT_STORAGE=postgres` + `DATABASE_URL` — для Google Cloud SQL (пока заглушка в `services/postgres_storage.py`, схема в `services/schema.sql`)
 
 ## Структура
 
 ```
 bots/wish_bot/
-├── main.py
+├── bootstrap.py    # общая сборка Bot + Dispatcher
+├── run_polling.py
+├── run_webhook.py
+├── main.py         # python -m bots.wish_bot.main → polling
 ├── config_data/
 ├── handlers/       # commands, groups, wishes
 ├── middlewares/    # i18n, group_context

@@ -19,31 +19,11 @@ def _bot_mode() -> str:
     return os.getenv("BOT_MODE", "polling").strip().lower()
 
 
-async def main() -> None:
-    if not _is_enabled("WISH_BOT_ENABLED", "1"):
-        logger.error("Нет включённых ботов. Проверьте переменные *_BOT_ENABLED в .env")
-        return
-
-    mode = _bot_mode()
-    if mode != "polling":
-        logger.error(
-            "BOT_MODE=%r: для webhook запускайте run.py напрямую (ветка в __main__), "
-            "не asyncio.run(main())",
-            mode,
-        )
-        return
-
-    logger.info("Запуск wish_bot (BOT_MODE=polling)")
+async def _run_polling() -> None:
     from bots.wish_bot.run_polling import run as run_wish_bot
 
+    logger.info("Запуск wish_bot (BOT_MODE=polling)")
     await run_wish_bot()
-
-
-def _run_webhook() -> None:
-    from bots.wish_bot.run_webhook import main as run_wish_webhook
-
-    logger.info("Запуск wish_bot (BOT_MODE=webhook)")
-    run_wish_webhook()
 
 
 if __name__ == "__main__":
@@ -53,9 +33,12 @@ if __name__ == "__main__":
 
     mode = _bot_mode()
     if mode == "webhook":
-        _run_webhook()
+        from bots.wish_bot.run_webhook import main as run_wish_webhook
+
+        logger.info("Запуск wish_bot (BOT_MODE=webhook)")
+        run_wish_webhook()
     elif mode == "polling":
-        asyncio.run(main())
+        asyncio.run(_run_polling())
     else:
         logger.error("Неизвестный BOT_MODE=%r. Используйте polling или webhook.", mode)
         raise SystemExit(1)
