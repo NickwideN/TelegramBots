@@ -20,8 +20,8 @@ dist
 build
 .venv
 venv
-env
-ENV
+/env/
+/ENV/
 
 # Данные и логи (не в образ)
 *.db

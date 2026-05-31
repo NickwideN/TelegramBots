@@ -5,9 +5,7 @@ from pathlib import Path
 
 from environs import Env
 
-from bots.wish_bot.services.postgres_storage import PostgresStorage
 from bots.wish_bot.services.repository import Repository, StorageNotConfiguredError
-from bots.wish_bot.services.sqlite_storage import SqliteStorage
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_ENV = _REPO_ROOT / ".env"
@@ -76,6 +74,9 @@ def create_repository(settings: AppSettings | None = None) -> Repository:
     global _repository
     if _repository is not None:
         return _repository
+
+    from bots.wish_bot.services.postgres_storage import PostgresStorage
+    from bots.wish_bot.services.sqlite_storage import SqliteStorage
 
     app = settings or load_app_settings()
     backend = app.storage.backend
