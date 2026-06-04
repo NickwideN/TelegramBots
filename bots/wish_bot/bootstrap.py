@@ -6,7 +6,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from fluentogram import TranslatorHub
 
 from bots.wish_bot.config_data import Config
-from bots.wish_bot.handlers import commands, groups, moderation, subscriptions, wishes
+from bots.wish_bot.handlers import commands, dev, groups, moderation, subscriptions, wishes
 from bots.wish_bot.middlewares.group_context import GroupContextMiddleware
 from bots.wish_bot.middlewares.i18n import TranslatorRunnerMiddleware
 from bots.wish_bot.utils.bot_info import set_bot_username
@@ -25,11 +25,13 @@ def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     translator_hub = create_translator_hub()
     dp = Dispatcher(storage=MemoryStorage())
     dp.workflow_data["_translator_hub"] = translator_hub
+    dp.workflow_data["tester_ids"] = config.tester_ids
 
     dp.update.middleware(GroupContextMiddleware())
     dp.update.middleware(TranslatorRunnerMiddleware())
 
     dp.include_router(commands.router)
+    dp.include_router(dev.router)
     dp.include_router(groups.router)
     dp.include_router(moderation.router)
     dp.include_router(subscriptions.router)

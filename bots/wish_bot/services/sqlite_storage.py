@@ -523,3 +523,27 @@ class SqliteStorage(Repository):
                 (group_id, taker_id, WishStatus.COMPLETED),
             ).fetchall()
             return [self.row_to_wish(r) for r in rows]
+
+    def purge_user_data(self, telegram_id: int) -> None:
+        with self._connect() as conn:
+            conn.execute("DELETE FROM groups WHERE admin_id = ?", (telegram_id,))
+            conn.execute(
+                "DELETE FROM wishes WHERE author_id = ? OR taken_by_id = ?",
+                (telegram_id, telegram_id),
+            )
+            conn.execute(
+                "DELETE FROM group_members WHERE user_id = ?",
+                (telegram_id,),
+            )
+            conn.execute(
+                "DELETE FROM wish_subscriptions WHERE user_id = ?",
+                (telegram_id,),
+            )
+            conn.execute(
+                "DELETE FROM group_blocks WHERE user_id = ? OR blocked_by_id = ?",
+                (telegram_id, telegram_id),
+            )
+            conn.execute(
+                "DELETE FROM users WHERE telegram_id = ?",
+                (telegram_id,),
+            )

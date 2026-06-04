@@ -18,6 +18,7 @@ class TgBot:
 class Config:
     tg_bot: TgBot
     app: AppSettings
+    tester_ids: frozenset[int]
 
     @property
     def bot_mode(self) -> str:
@@ -38,7 +39,13 @@ def load_config(path: str | None = None) -> Config:
     if env_file.is_file():
         env.read_env(env_file, override=True)
 
+    raw_tester_ids = env.str("WISH_BOT_TESTER_IDS", default="")
+    tester_ids = frozenset(
+        int(part.strip()) for part in raw_tester_ids.split(",") if part.strip()
+    )
+
     return Config(
         tg_bot=TgBot(token=env.str("WISH_BOT_TOKEN", default="")),
         app=load_app_settings(path),
+        tester_ids=tester_ids,
     )

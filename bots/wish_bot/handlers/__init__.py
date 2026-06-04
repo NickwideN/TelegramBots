@@ -1,3 +1,3 @@
-from . import commands, groups, moderation, subscriptions, wishes
+from . import commands, dev, groups, moderation, subscriptions, wishes
 
-__all__ = ["commands", "groups", "moderation", "subscriptions", "wishes"]
+__all__ = ["commands", "dev", "groups", "moderation", "subscriptions", "wishes"]

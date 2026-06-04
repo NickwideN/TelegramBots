@@ -234,3 +234,7 @@ class Repository(ABC):
     @abstractmethod
     def list_completed_wishes_by_taker(self, taker_id: int, group_id: int) -> list[Wish]:
         pass
+
+    @abstractmethod
+    def purge_user_data(self, telegram_id: int) -> None:
+        pass

@@ -153,3 +153,11 @@ button-join-group = Вступить: { $name }
 
 message-choose-language = Выберите язык:
 message-language-selected = Язык изменён.
+
+message-delete-db-warning =
+    ⚠️ Будут удалены все ваши данные: профиль, группы (где вы админ), желания, подписки и участие в группах.
+
+    Нажмите кнопку ниже для подтверждения.
+message-delete-db-done = Все ваши данные удалены из базы.
+
+button-delete-db = Удалить БД
