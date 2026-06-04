@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from fluentogram import TranslatorRunner
 
+from bots.wish_bot.handlers.commands import send_join_welcome
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.handlers.moderation import _send_blocked_list, _send_members_list
 from bots.wish_bot.services.repository import Group, RepositoryError, User
@@ -208,9 +209,10 @@ async def callback_join_group(
         repo.add_member(group.id, user.telegram_id)
     repo.set_current_group(user.telegram_id, group.id)
 
-    await callback.answer(i18n.get("message-joined-group", name=group.name))
+    await callback.answer()
     if callback.message:
         await callback.message.edit_reply_markup(reply_markup=None)
+        await send_join_welcome(callback.message, i18n, group.name)
 
 
 @router.message(Command(commands=["group_admin"]))

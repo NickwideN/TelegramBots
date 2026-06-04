@@ -26,6 +26,43 @@ def _language_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
     )
 
 
+def join_welcome_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=i18n.get("button-make-wish"),
+                    callback_data="menu:add_wish",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=i18n.get("button-open-wishes"),
+                    callback_data="menu:wishes",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=i18n.get("button-help"),
+                    callback_data="menu:help",
+                ),
+            ],
+        ],
+    )
+
+
+async def send_join_welcome(
+    message: Message,
+    i18n: TranslatorRunner,
+    group_name: str,
+) -> None:
+    await answer_with_retry(
+        message,
+        i18n.get("message-joined-welcome", groupName=group_name),
+        reply_markup=join_welcome_keyboard(i18n),
+    )
+
+
 async def _join_group_by_code(
     message: Message,
     invite_code: str,
@@ -48,8 +85,7 @@ async def _join_group_by_code(
     if not repo.is_member(group.id, user_id):
         repo.add_member(group.id, user_id)
     repo.set_current_group(user_id, group.id)
-    await answer_with_retry(message, i18n.get("help-text"))
-    await answer_with_retry(message, i18n.get("message-joined-group", name=group.name))
+    await send_join_welcome(message, i18n, group.name)
     return True
 
 
@@ -76,6 +112,13 @@ async def cmd_start(
 async def cmd_help(message: Message, i18n: TranslatorRunner) -> None:
     """Обработчик команды /help."""
     await answer_with_retry(message, i18n.get("help-text"))
+
+
+@router.callback_query(F.data == "menu:help")
+async def callback_menu_help(callback: CallbackQuery, i18n: TranslatorRunner) -> None:
+    await callback.answer()
+    if callback.message:
+        await answer_with_retry(callback.message, i18n.get("help-text"))
 
 
 @router.message(Command(commands=["language"]))

@@ -25,6 +25,11 @@ message-no-group =
     Вы не в группе. Создайте группу (/create_group) или вступите по ссылке / по списку (/groups).
 
 message-joined-group = Вы вступили в группу «{ $name }».
+message-joined-welcome =
+    Привет! Я <b>Бот Желаний</b> 💫
+
+    Добро пожаловать в группу <b>{ $groupName }</b>
+    В этом боте каждый может анонимно загадать желание и исполнить чужое. Попробуй загадать первое желание
 message-group-not-found = Группа не найдена. Проверьте ссылку.
 
 # Группы
@@ -150,6 +155,9 @@ button-unblock = Разблокировать
 button-language-russian = Русский
 button-language-english = English
 button-join-group = Вступить: { $name }
+button-make-wish = Загадать желание
+button-open-wishes = Доступные желания
+button-help = Помощь
 
 message-choose-language = Выберите язык:
 message-language-selected = Язык изменён.

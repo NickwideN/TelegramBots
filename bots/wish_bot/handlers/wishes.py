@@ -191,6 +191,15 @@ async def cmd_add_wish(
     current_group: Group | None,
 ) -> None:
     """Добавить желание."""
+    await prompt_add_wish(message, i18n, state, current_group)
+
+
+async def prompt_add_wish(
+    message: Message,
+    i18n: TranslatorRunner,
+    state: FSMContext,
+    current_group: Group | None,
+) -> None:
     if current_group is None:
         await answer_with_retry(message, i18n.get("message-no-group"))
         return
@@ -237,6 +246,14 @@ async def cmd_wishes(
     current_group: Group | None,
 ) -> None:
     """Анонимный список открытых желаний."""
+    await send_open_wishes(message, i18n, current_group)
+
+
+async def send_open_wishes(
+    message: Message,
+    i18n: TranslatorRunner,
+    current_group: Group | None,
+) -> None:
     if current_group is None:
         await answer_with_retry(message, i18n.get("message-no-group"))
         return
@@ -261,6 +278,29 @@ async def cmd_wishes(
             ],
         )
         await answer_with_retry(message, wish.text, reply_markup=keyboard)
+
+
+@router.callback_query(F.data == "menu:add_wish")
+async def callback_menu_add_wish(
+    callback: CallbackQuery,
+    i18n: TranslatorRunner,
+    state: FSMContext,
+    current_group: Group | None,
+) -> None:
+    await callback.answer()
+    if callback.message:
+        await prompt_add_wish(callback.message, i18n, state, current_group)
+
+
+@router.callback_query(F.data == "menu:wishes")
+async def callback_menu_wishes(
+    callback: CallbackQuery,
+    i18n: TranslatorRunner,
+    current_group: Group | None,
+) -> None:
+    await callback.answer()
+    if callback.message:
+        await send_open_wishes(callback.message, i18n, current_group)
 
 
 @router.callback_query(F.data.startswith("take:"))
