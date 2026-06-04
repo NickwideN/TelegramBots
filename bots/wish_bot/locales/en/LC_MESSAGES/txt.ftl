@@ -31,10 +31,12 @@ message-joined-welcome =
     Welcome to group <b>{ $groupName }</b>
     In this bot, everyone can anonymously make a wish and fulfill someone else's. Try making your first wish!
 message-group-not-found = Group not found. Check the link.
+message-did-not-understand = Oops, I didn't understand you
 
 # Groups
 message-create-group-name = Enter the group name:
 message-create-group-visibility = Choose group visibility:
+message-create-group-expired = Please create a group again (/create_group)
 message-group-created =
     Group «{ $name }» created.
     Invite link:

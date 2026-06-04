@@ -31,10 +31,12 @@ message-joined-welcome =
     Добро пожаловать в группу <b>{ $groupName }</b>
     В этом боте каждый может анонимно загадать желание и исполнить чужое. Попробуй загадать первое желание
 message-group-not-found = Группа не найдена. Проверьте ссылку.
+message-did-not-understand = Упс, не понял тебя
 
 # Группы
 message-create-group-name = Введите название группы:
 message-create-group-visibility = Выберите видимость группы:
+message-create-group-expired = Сначала создай группу заново (/create_group)
 message-group-created =
     Группа «{ $name }» создана.
     Ссылка для приглашения:

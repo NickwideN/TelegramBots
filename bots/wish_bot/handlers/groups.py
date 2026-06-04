@@ -77,6 +77,7 @@ def _admin_keyboard(i18n: TranslatorRunner, group: Group) -> InlineKeyboardMarku
 @router.message(Command(commands=["create_group"]))
 async def cmd_create_group(message: Message, i18n: TranslatorRunner, state: FSMContext) -> None:
     """Создание группы — ввод названия."""
+    await state.clear()
     await state.set_state(CreateGroupSG.waiting_name)
     await answer_with_retry(message, i18n.get("message-create-group-name"))
 
@@ -90,10 +91,14 @@ async def process_group_name(message: Message, i18n: TranslatorRunner, state: FS
 
     await state.update_data(group_name=name)
     await state.set_state(CreateGroupSG.waiting_visibility)
-    await answer_with_retry(
+    prompt = await answer_with_retry(
         message,
         i18n.get("message-create-group-visibility"),
         reply_markup=_visibility_keyboard(i18n),
+    )
+    await state.update_data(
+        visibility_message_id=prompt.message_id,
+        visibility_chat_id=prompt.chat.id,
     )
 
 
@@ -107,8 +112,18 @@ async def process_group_visibility(
     state: FSMContext,
     user: User,
 ) -> None:
-    is_public = callback.data == "create_group:public"
     data = await state.get_data()
+    if (
+        callback.message
+        and data.get("visibility_message_id") != callback.message.message_id
+    ):
+        await callback.answer(
+            i18n.get("message-create-group-expired"),
+            show_alert=True,
+        )
+        return
+
+    is_public = callback.data == "create_group:public"
     name = data.get("group_name", "")
     await state.clear()
 
@@ -122,6 +137,19 @@ async def process_group_visibility(
     if callback.message:
         await callback.message.edit_text(text)
     await callback.answer()
+
+
+@router.callback_query(F.data.in_(("create_group:public", "create_group:private")))
+async def stale_create_group_visibility(
+    callback: CallbackQuery,
+    i18n: TranslatorRunner,
+) -> None:
+    await callback.answer(
+        i18n.get("message-create-group-expired"),
+        show_alert=True,
+    )
+    if callback.message:
+        await callback.message.edit_reply_markup(reply_markup=None)
 
 
 @router.message(Command(commands=["group"]))
