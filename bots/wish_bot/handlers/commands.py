@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from fluentogram import TranslatorRunner
 
 from bots.wish_bot.services import get_repository
+from bots.wish_bot.services.repository import Group
 from bots.wish_bot.utils.send import answer_with_retry
 
 router = Router()
@@ -20,6 +21,31 @@ def _language_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text=i18n.get("button-language-english"),
                     callback_data="lang:en",
+                ),
+            ],
+        ],
+    )
+
+
+def start_no_group_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=i18n.get("button-public-groups"),
+                    callback_data="menu:groups",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=i18n.get("button-create-group"),
+                    callback_data="menu:create_group",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=i18n.get("button-help"),
+                    callback_data="menu:help",
                 ),
             ],
         ],
@@ -48,6 +74,26 @@ def join_welcome_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
                 ),
             ],
         ],
+    )
+
+
+async def send_start_no_group(message: Message, i18n: TranslatorRunner) -> None:
+    await answer_with_retry(
+        message,
+        i18n.get("message-start-no-group"),
+        reply_markup=start_no_group_keyboard(i18n),
+    )
+
+
+async def send_start_in_group(
+    message: Message,
+    i18n: TranslatorRunner,
+    group_name: str,
+) -> None:
+    await answer_with_retry(
+        message,
+        i18n.get("message-start-in-group", groupName=group_name),
+        reply_markup=join_welcome_keyboard(i18n),
     )
 
 
@@ -94,6 +140,7 @@ async def cmd_start(
     message: Message,
     command: CommandObject,
     i18n: TranslatorRunner,
+    current_group: Group | None,
 ) -> None:
     """Обработчик команды /start."""
     user_id = message.from_user.id if message.from_user else 0
@@ -105,7 +152,11 @@ async def cmd_start(
             await _join_group_by_code(message, invite_code, i18n, user_id)
             return
 
-    await answer_with_retry(message, i18n.get("help-text"))
+    if current_group is None:
+        await send_start_no_group(message, i18n)
+        return
+
+    await send_start_in_group(message, i18n, current_group.name)
 
 
 @router.message(Command(commands=["help"]))

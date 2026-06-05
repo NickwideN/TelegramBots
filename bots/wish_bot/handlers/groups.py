@@ -74,12 +74,31 @@ def _admin_keyboard(i18n: TranslatorRunner, group: Group) -> InlineKeyboardMarku
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.message(Command(commands=["create_group"]))
-async def cmd_create_group(message: Message, i18n: TranslatorRunner, state: FSMContext) -> None:
-    """Создание группы — ввод названия."""
+async def prompt_create_group(
+    message: Message,
+    i18n: TranslatorRunner,
+    state: FSMContext,
+) -> None:
     await state.clear()
     await state.set_state(CreateGroupSG.waiting_name)
     await answer_with_retry(message, i18n.get("message-create-group-name"))
+
+
+@router.message(Command(commands=["create_group"]))
+async def cmd_create_group(message: Message, i18n: TranslatorRunner, state: FSMContext) -> None:
+    """Создание группы — ввод названия."""
+    await prompt_create_group(message, i18n, state)
+
+
+@router.callback_query(F.data == "menu:create_group")
+async def callback_menu_create_group(
+    callback: CallbackQuery,
+    i18n: TranslatorRunner,
+    state: FSMContext,
+) -> None:
+    await callback.answer()
+    if callback.message:
+        await prompt_create_group(callback.message, i18n, state)
 
 
 @router.message(StateFilter(CreateGroupSG.waiting_name), F.text)
@@ -182,9 +201,11 @@ async def cmd_group(
     await answer_with_retry(message, text)
 
 
-@router.message(Command(commands=["groups"]))
-async def cmd_groups(message: Message, i18n: TranslatorRunner, user: User) -> None:
-    """Список публичных групп."""
+async def send_public_groups(
+    message: Message,
+    i18n: TranslatorRunner,
+    user: User,
+) -> None:
     repo = get_repository()
     groups = repo.list_public_groups()
 
@@ -210,6 +231,23 @@ async def cmd_groups(message: Message, i18n: TranslatorRunner, user: User) -> No
             ],
         )
         await answer_with_retry(message, group.name, reply_markup=keyboard)
+
+
+@router.message(Command(commands=["groups"]))
+async def cmd_groups(message: Message, i18n: TranslatorRunner, user: User) -> None:
+    """Список публичных групп."""
+    await send_public_groups(message, i18n, user)
+
+
+@router.callback_query(F.data == "menu:groups")
+async def callback_menu_groups(
+    callback: CallbackQuery,
+    i18n: TranslatorRunner,
+    user: User,
+) -> None:
+    await callback.answer()
+    if callback.message:
+        await send_public_groups(callback.message, i18n, user)
 
 
 @router.callback_query(F.data.startswith("join_group:"))

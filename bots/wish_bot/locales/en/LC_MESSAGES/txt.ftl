@@ -25,6 +25,17 @@ message-no-group =
     You are not in a group. Create one (/create_group) or join via link / list (/groups).
 
 message-joined-group = You joined group «{ $name }».
+message-start-no-group =
+    Hi! I'm the <b>Wish Bot</b> 💫
+
+    In this bot, everyone can anonymously make a wish and fulfill someone else's. But first you need to join a group. Join a public group, create your own, or ask your admin to send you a link to your group.
+
+message-start-in-group =
+    Hi! I'm the <b>Wish Bot</b> 💫
+
+    You are in group <b>{ $groupName }</b>
+    In this bot, everyone can anonymously make a wish and fulfill someone else's. Try making your first wish!
+
 message-joined-welcome =
     Hi! I'm the <b>Wish Bot</b> 💫
 
@@ -159,6 +170,8 @@ button-language-english = English
 button-join-group = Join: { $name }
 button-make-wish = Make a wish
 button-open-wishes = Available wishes
+button-public-groups = Public groups
+button-create-group = Create group
 button-help = Help
 
 message-choose-language = Choose language:
