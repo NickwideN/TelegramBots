@@ -13,6 +13,7 @@ from bots.wish_bot.bootstrap import (
 )
 from bots.wish_bot.config_data import Config, load_config
 from config.settings import create_repository
+from config.startup_checks import log_startup_diagnostics, verify_postgres_connection
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,9 @@ async def _serve(config: Config) -> None:
     await site.start()
     logger.info("wish_bot: HTTP on %s:%s", host, port)
 
+    log_startup_diagnostics(config)
+    if config.storage.backend == "postgres" and config.storage.database_url:
+        verify_postgres_connection(config.storage.database_url)
     create_repository(config.app)
     await initialize_bot_identity(bot)
 

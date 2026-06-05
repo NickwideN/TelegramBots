@@ -10,15 +10,46 @@ from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger(__name__)
 
-_SOCKET_PREFIX = "/cloudsql/"
+SOCKET_PREFIX = "/cloudsql/"
+_SOCKET_PREFIX = SOCKET_PREFIX
 
 
 @dataclass(frozen=True)
-class _CloudSqlParams:
+class CloudSqlParams:
     connection_name: str
     user: str
     password: str
     database: str
+
+
+@dataclass(frozen=True)
+class _CloudSqlParams(CloudSqlParams):
+    pass
+
+
+def parse_cloud_sql_params(database_url: str) -> CloudSqlParams | None:
+    if SOCKET_PREFIX not in database_url:
+        return None
+    parsed = urlparse(database_url)
+    connection_name = database_url.split(SOCKET_PREFIX, 1)[1].split("?", 1)[0]
+    user = unquote(parsed.username or "")
+    password = unquote(parsed.password or "")
+    database = (parsed.path or "/").lstrip("/") or "postgres"
+    if not user or not connection_name:
+        return None
+    return CloudSqlParams(connection_name, user, password, database)
+
+
+def _parse_cloud_sql_url(database_url: str) -> _CloudSqlParams | None:
+    params = parse_cloud_sql_params(database_url)
+    if params is None:
+        return None
+    return _CloudSqlParams(
+        params.connection_name,
+        params.user,
+        params.password,
+        params.database,
+    )
 
 
 class PgConnection:
@@ -37,19 +68,6 @@ class PgConnection:
         self._conn.close()
 
 
-def _parse_cloud_sql_url(database_url: str) -> _CloudSqlParams | None:
-    if _SOCKET_PREFIX not in database_url:
-        return None
-    parsed = urlparse(database_url)
-    connection_name = database_url.split(_SOCKET_PREFIX, 1)[1].split("?", 1)[0]
-    user = unquote(parsed.username or "")
-    password = unquote(parsed.password or "")
-    database = (parsed.path or "/").lstrip("/") or "postgres"
-    if not user or not connection_name:
-        return None
-    return _CloudSqlParams(connection_name, user, password, database)
-
-
 class PostgresConnectionFactory:
     def __init__(self, database_url: str) -> None:
         self._database_url = database_url
@@ -58,15 +76,17 @@ class PostgresConnectionFactory:
     def connect(self) -> PgConnection:
         if self._cloud_sql:
             logger.info(
-                "postgres: %s%s",
-                _SOCKET_PREFIX,
+                "postgres: connect %s%s db=%s user=%s",
+                SOCKET_PREFIX,
                 self._cloud_sql.connection_name,
+                self._cloud_sql.database,
+                self._cloud_sql.user,
             )
             raw = psycopg2.connect(
                 dbname=self._cloud_sql.database,
                 user=self._cloud_sql.user,
                 password=self._cloud_sql.password,
-                host=f"{_SOCKET_PREFIX}{self._cloud_sql.connection_name}",
+                host=f"{SOCKET_PREFIX}{self._cloud_sql.connection_name}",
                 connect_timeout=15,
             )
             return PgConnection(raw)
