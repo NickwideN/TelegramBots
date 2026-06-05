@@ -56,7 +56,7 @@ python -m bots.wish_bot.main
 
 ## Хранилище
 
-Общие переменные в корневом `.env` (см. `env.example`):
+Общие переменные в корневом `.env` (см. `env.example`; для Cloud Run — `.env.dev` / `.env.prod`):
 
 - `DB_BACKEND=sqlite` — файл `data/telegram_bots.db` (схема `schema.sqlite.sql` создаётся только при первом запуске)
 - `DB_BACKEND=postgres` + `DATABASE_URL` — Cloud SQL (схема: `services/schema.sql`)

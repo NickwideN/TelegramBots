@@ -8,7 +8,6 @@ from config.settings import AppSettings, load_app_settings
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _DEFAULT_ENV = _REPO_ROOT / ".env"
 
-
 @dataclass
 class TgBot:
     token: str
