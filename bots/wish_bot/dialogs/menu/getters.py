@@ -121,6 +121,27 @@ async def get_groups_select_data(
     }
 
 
+async def get_group_created_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    current_group: Group | None,
+    **kwargs,
+) -> dict:
+    if current_group is None:
+        return {
+            "text": i18n.get("message-no-group"),
+            "button_share": i18n.get("button-share"),
+            "share_query": "",
+        }
+
+    link = make_invite_link(current_group.invite_code)
+    return {
+        "text": i18n.get("message-group-created", name=current_group.name, link=link),
+        "button_share": i18n.get("button-share"),
+        "share_query": f"share_{current_group.invite_code}",
+    }
+
+
 async def get_share_group_data(
     dialog_manager: DialogManager,
     i18n: TranslatorRunner,

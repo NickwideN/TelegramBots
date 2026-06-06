@@ -63,9 +63,15 @@ message-create-group-name = Enter the group name:
 message-create-group-visibility = Choose group visibility:
 message-create-group-expired = Please create a group again via the menu
 message-group-created =
-    Group «{ $name }» created.
-    Invite link:
-    { $link }
+    🎉 Group { $name } created.
+
+    👑 You are the admin of this group.
+
+    You're the only member for now. Invite others to start exchanging wishes.
+
+    🔗 Invite link:
+
+    <code>{ $link }</code>
 
 message-current-group =
     Current group: <b>{ $name }</b>

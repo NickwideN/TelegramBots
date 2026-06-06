@@ -1,7 +1,8 @@
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager
+from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog.manager.message_manager import _combine
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from fluentogram import TranslatorHub, TranslatorRunner
@@ -22,7 +23,6 @@ from bots.wish_bot.services.repository import (
     UserNotMemberError,
 )
 from bots.wish_bot.states.menu import MenuSG
-from bots.wish_bot.utils.bot_info import make_invite_link
 from bots.wish_bot.utils.send import answer_with_retry
 
 
@@ -42,7 +42,24 @@ def _state(manager: DialogManager) -> FSMContext:
     return manager.middleware_data["state"]
 
 
+_NAV_BACK_STACK_KEY = "nav_back_stack"
+
+
+def _clear_nav_back_stack(dialog_manager: DialogManager) -> None:
+    dialog_manager.dialog_data.pop(_NAV_BACK_STACK_KEY, None)
+    dialog_manager.dialog_data.pop("nav_back_state", None)
+
+
+async def _send_dialog_as_new_message(dialog_manager: DialogManager) -> None:
+    """Отправить текущее окно диалога новым сообщением без снятия клавиатуры с предыдущего."""
+    bot = dialog_manager.middleware_data["bot"]
+    new_message = await dialog_manager.dialog().render(dialog_manager)
+    sent_message = await dialog_manager.message_manager.send_message(bot, new_message)
+    dialog_manager._save_last_message(_combine(new_message, sent_message))
+
+
 async def _go_to_main_menu(dialog_manager: DialogManager) -> None:
+    _clear_nav_back_stack(dialog_manager)
     if _current_group(dialog_manager):
         await dialog_manager.switch_to(MenuSG.group)
     else:
@@ -86,7 +103,16 @@ async def on_language_back(
 def _save_nav_back(dialog_manager: DialogManager) -> None:
     current_context = dialog_manager.current_context()
     if current_context:
-        dialog_manager.dialog_data["nav_back_state"] = current_context.state
+        stack = dialog_manager.dialog_data.setdefault(_NAV_BACK_STACK_KEY, [])
+        stack.append(current_context.state)
+
+
+def _pop_nav_back(dialog_manager: DialogManager):
+    stack = dialog_manager.dialog_data.get(_NAV_BACK_STACK_KEY)
+    if not stack:
+        legacy = dialog_manager.dialog_data.pop("nav_back_state", None)
+        return legacy
+    return stack.pop()
 
 
 async def on_nav_back(
@@ -95,7 +121,7 @@ async def on_nav_back(
     dialog_manager: DialogManager,
 ) -> None:
     await callback.answer()
-    back_state = dialog_manager.dialog_data.get("nav_back_state")
+    back_state = _pop_nav_back(dialog_manager)
     if back_state:
         await dialog_manager.switch_to(back_state)
         return
@@ -209,6 +235,7 @@ async def on_select_my_group(
 
     repo.set_current_group(user.telegram_id, group_id)
     dialog_manager.middleware_data["current_group"] = group
+    _clear_nav_back_stack(dialog_manager)
     await callback.answer()
     await dialog_manager.switch_to(MenuSG.group)
 
@@ -240,6 +267,7 @@ async def on_select_public_group(
     repo.set_current_group(user.telegram_id, group.id)
     dialog_manager.middleware_data["current_group"] = group
 
+    _clear_nav_back_stack(dialog_manager)
     await callback.answer(i18n.get("message-joined-group", name=group.name))
     await dialog_manager.switch_to(MenuSG.group)
 
@@ -392,7 +420,7 @@ async def on_create_group_name(
         return
 
     dialog_manager.dialog_data["group_name"] = name
-    dialog_manager.dialog_data["nav_back_state"] = MenuSG.create_name
+    _save_nav_back(dialog_manager)
     await dialog_manager.switch_to(MenuSG.create_visibility)
 
 
@@ -431,14 +459,13 @@ async def _finish_create_group(
     dialog_manager.middleware_data["current_group"] = group
     dialog_manager.dialog_data.pop("group_name", None)
 
-    link = make_invite_link(group.invite_code)
+    _clear_nav_back_stack(dialog_manager)
     await callback.answer()
-    if callback.message:
-        await answer_with_retry(
-            callback.message,
-            i18n.get("message-group-created", name=group.name, link=link),
-        )
+    await dialog_manager.switch_to(MenuSG.group_created)
+    await dialog_manager.show()
     await dialog_manager.switch_to(MenuSG.group)
+    await _send_dialog_as_new_message(dialog_manager)
+    dialog_manager.show_mode = ShowMode.NO_UPDATE
 
 
 async def on_member_action(

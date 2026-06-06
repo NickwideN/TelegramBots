@@ -15,3 +15,4 @@ class MenuSG(StatesGroup):
     language = State()
     create_name = State()
     create_visibility = State()
+    group_created = State()

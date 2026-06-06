@@ -12,6 +12,7 @@ from aiogram_dialog.widgets.text import Format
 from bots.wish_bot.dialogs.menu.getters import (
     get_create_name_data,
     get_create_visibility_data,
+    get_group_created_data,
     get_group_data,
     get_group_members_data,
     get_groups_select_data,
@@ -338,6 +339,20 @@ create_visibility_window = Window(
     state=MenuSG.create_visibility,
 )
 
+group_created_window = Window(
+    Format("{text}"),
+    SwitchInlineQueryChosenChatButton(
+        Format("{button_share}"),
+        Format("{share_query}"),
+        allow_user_chats=True,
+        allow_group_chats=True,
+        allow_channel_chats=False,
+        id="share_invite_created",
+    ),
+    getter=get_group_created_data,
+    state=MenuSG.group_created,
+)
+
 menu_dialog = Dialog(
     welcome_window,
     welcome_invite_window,
@@ -352,4 +367,5 @@ menu_dialog = Dialog(
     language_window,
     create_name_window,
     create_visibility_window,
+    group_created_window,
 )
