@@ -2,20 +2,38 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram_dialog import setup_dialogs
 from fluentogram import TranslatorHub
 
 from bots.wish_bot.config_data import Config
 from bots.wish_bot.dialogs import menu_dialog
-from bots.wish_bot.handlers import commands, dev, fallback, groups, inline_share, moderation, wishes
+from bots.wish_bot.handlers import (
+    commands,
+    dev,
+    fallback,
+    groups,
+    inline_share,
+    moderation,
+    stale_dialog,
+    wishes,
+)
 from bots.wish_bot.middlewares.create_group_flow import CreateGroupVisibilityMiddleware
 from bots.wish_bot.middlewares.group_context import GroupContextMiddleware
 from bots.wish_bot.middlewares.i18n import TranslatorRunnerMiddleware
+from bots.wish_bot.middlewares.menu_message import MenuMessageMiddleware
+from bots.wish_bot.services.fsm_storage import PostgresFsmStorage, SqliteFsmStorage
 from bots.wish_bot.utils.bot_info import set_bot_username
 from bots.wish_bot.utils.i18n import create_translator_hub
 
 logger = logging.getLogger(__name__)
+
+
+def _create_fsm_storage(config: Config):
+    if config.storage.backend == "postgres":
+        if not config.storage.database_url:
+            raise RuntimeError("Postgres FSM storage requires DATABASE_URL")
+        return PostgresFsmStorage(config.storage.database_url)
+    return SqliteFsmStorage(config.storage.sqlite_path)
 
 
 def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
@@ -26,7 +44,7 @@ def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     )
 
     translator_hub = create_translator_hub()
-    dp = Dispatcher(storage=MemoryStorage())
+    dp = Dispatcher(storage=_create_fsm_storage(config))
     dp.workflow_data["_translator_hub"] = translator_hub
     dp.workflow_data["tester_ids"] = config.tester_ids
 
@@ -42,8 +60,11 @@ def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     dp.include_router(inline_share.router)
     dp.include_router(menu_dialog)
     dp.include_router(fallback.router)
+    dp.include_router(stale_dialog.router)
 
     setup_dialogs(dp)
+    dp.callback_query.middleware(MenuMessageMiddleware())
+    dp.message.middleware(MenuMessageMiddleware())
 
     return bot, dp, translator_hub
 

@@ -15,7 +15,15 @@ CREATE TABLE IF NOT EXISTS users (
     first_name TEXT,
     locale VARCHAR(5) NOT NULL DEFAULT 'ru',
     current_group_id INTEGER REFERENCES groups (id) ON DELETE SET NULL,
+    active_menu_chat_id BIGINT,
+    active_menu_message_id BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS fsm_data (
+    storage_key TEXT PRIMARY KEY,
+    state TEXT,
+    data_json JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
 CREATE TABLE IF NOT EXISTS group_members (

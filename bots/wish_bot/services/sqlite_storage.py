@@ -123,6 +123,50 @@ class SqliteStorage(Repository):
                 (group_id, telegram_id),
             )
 
+    def get_active_menu_message(self, telegram_id: int) -> tuple[int, int] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT active_menu_chat_id, active_menu_message_id
+                FROM users
+                WHERE telegram_id = ?
+                """,
+                (telegram_id,),
+            ).fetchone()
+        if not row or row["active_menu_chat_id"] is None or row["active_menu_message_id"] is None:
+            return None
+        return row["active_menu_chat_id"], row["active_menu_message_id"]
+
+    def replace_active_menu_message(
+        self,
+        telegram_id: int,
+        chat_id: int,
+        message_id: int,
+    ) -> tuple[int, int] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT active_menu_chat_id, active_menu_message_id
+                FROM users
+                WHERE telegram_id = ?
+                """,
+                (telegram_id,),
+            ).fetchone()
+            previous: tuple[int, int] | None = None
+            if row and row["active_menu_chat_id"] is not None and row["active_menu_message_id"] is not None:
+                previous = (row["active_menu_chat_id"], row["active_menu_message_id"])
+                if previous[0] == chat_id and previous[1] == message_id:
+                    return None
+            conn.execute(
+                """
+                UPDATE users
+                SET active_menu_chat_id = ?, active_menu_message_id = ?
+                WHERE telegram_id = ?
+                """,
+                (chat_id, message_id, telegram_id),
+            )
+        return previous
+
     def create_group(self, admin_id: int, name: str, is_public: bool) -> Group:
         invite_code = generate_invite_code()
         now = utcnow().isoformat()

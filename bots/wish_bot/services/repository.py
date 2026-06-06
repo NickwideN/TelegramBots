@@ -128,6 +128,19 @@ class Repository(ABC):
         pass
 
     @abstractmethod
+    def get_active_menu_message(self, telegram_id: int) -> tuple[int, int] | None:
+        pass
+
+    @abstractmethod
+    def replace_active_menu_message(
+        self,
+        telegram_id: int,
+        chat_id: int,
+        message_id: int,
+    ) -> tuple[int, int] | None:
+        pass
+
+    @abstractmethod
     def create_group(self, admin_id: int, name: str, is_public: bool) -> Group:
         pass
 
