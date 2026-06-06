@@ -104,8 +104,26 @@ message-group-not-admin = Only the group admin can change settings.
 message-group-visibility-changed = Group visibility updated.
 
 message-group-members-header = <b>Group members</b>
+message-group-members-title = Members of group { $groupName }
+message-group-members-admins-header = 👑 Admins:
+message-group-members-members-header = 👥 Members:
+message-group-members-blocked-header = 🚫 Blocked:
+message-group-members-admin-line = { $name } — admin
+message-group-members-select-prompt = Select a member to change their status.
+message-group-member-detail =
+    <b>{ $name }</b>
+
+    Role: { $role }
+    Status: { $status }
+    Wishes created: { $wishesCount }
+    Own wishes fulfilled by others: { $wishesCompletedByOthers }
+    Currently in progress: { $takenWishesCount }
+    Others' wishes fulfilled: { $fulfilledOthersCount }
 message-no-group-members = There are no members in the group.
 member-role-admin = admin
+member-role-participant = participant
+member-status-active = active
+member-status-blocked = blocked
 message-groups-select = <b>Groups</b>
 message-share-group =
     🔗 Invitation to group <b>{ $name }</b>

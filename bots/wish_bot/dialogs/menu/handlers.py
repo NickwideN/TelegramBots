@@ -512,7 +512,18 @@ async def _finish_create_group(
     await send_main_menu_as_new_message(dialog_manager)
 
 
-async def on_member_action(
+async def on_select_member(
+    callback: CallbackQuery,
+    widget,
+    dialog_manager: DialogManager,
+) -> None:
+    dialog_manager.dialog_data["selected_member_id"] = int(dialog_manager.item_id)
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.group_member_detail)
+
+
+async def on_member_block_toggle(
     callback: CallbackQuery,
     button: Button,
     dialog_manager: DialogManager,
@@ -524,7 +535,12 @@ async def on_member_action(
         await callback.answer(i18n.get("message-group-not-admin"), show_alert=True)
         return
 
-    target_id = int(dialog_manager.item_id)
+    target_id = dialog_manager.dialog_data.get("selected_member_id")
+    if not target_id:
+        await callback.answer(i18n.get("message-member-not-found"), show_alert=True)
+        return
+
+    target_id = int(target_id)
     if target_id == current_group.admin_id:
         await callback.answer()
         return

@@ -104,8 +104,26 @@ message-group-not-admin = Только администратор группы �
 message-group-visibility-changed = Видимость группы обновлена.
 
 message-group-members-header = <b>Участники текущей группы</b>
+message-group-members-title = Участники группы { $groupName }
+message-group-members-admins-header = 👑 Админы:
+message-group-members-members-header = 👥 Участники:
+message-group-members-blocked-header = 🚫 Заблокированные:
+message-group-members-admin-line = { $name } — админ
+message-group-members-select-prompt = Выберите участника, чтобы изменить статус.
+message-group-member-detail =
+    <b>{ $name }</b>
+
+    Роль: { $role }
+    Статус: { $status }
+    Загадано желаний: { $wishesCount }
+    Мои желания исполнены другими: { $wishesCompletedByOthers }
+    Сейчас на исполнении: { $takenWishesCount }
+    Исполнено чужих желаний: { $fulfilledOthersCount }
 message-no-group-members = В группе нет участников.
 member-role-admin = админ
+member-role-participant = участник
+member-status-active = активен
+member-status-blocked = заблокирован
 message-groups-select = <b>Группы</b>
 message-share-group =
     🔗 Приглашение в группу <b>{ $name }</b>
@@ -150,9 +168,9 @@ message-blocked-in-group = Вы заблокированы в группе «{ $
 
 # Желания
 message-add-wish-prompt = Напишите текст желания:
-message-wish-added = Желание добавлено.
-message-wish-empty = Текст желания не может быть пустым.
-message-no-open-wishes = Открытых желаний пока нет.
+message-wish-added = Желание добавлено, скоро кто-то его возьмёт😉
+message-wish-empty = Текст желания не может быть пустым
+message-no-open-wishes = Открытых желаний пока нет
 message-open-wishes-header = <b>Доступные желания</b>:
 message-open-wishes-take-prompt = Нажмите на желание, которое хотите взять:
 message-wish-taken = Желание взято.

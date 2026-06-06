@@ -4,7 +4,7 @@ from fluentogram import TranslatorRunner
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.services.repository import Group, User
 from bots.wish_bot.utils.bot_info import make_invite_link
-from bots.wish_bot.utils.members import member_label
+from bots.wish_bot.utils.members import member_display_name, member_label, member_short_name
 from bots.wish_bot.utils.share import build_share_invite_body, make_telegram_share_url
 
 
@@ -383,6 +383,23 @@ async def get_public_groups_data(
     }
 
 
+def _member_wish_stats(repo, user_id: int, group_id: int) -> tuple[int, int, int, int]:
+    wishes_count = len(repo.list_wishes_by_author(user_id, group_id))
+    wishes_completed_by_others = len(
+        repo.list_completed_wishes_by_author(user_id, group_id),
+    )
+    taken_wishes_count = len(repo.list_taken_by_user(user_id, group_id))
+    fulfilled_others_count = len(
+        repo.list_completed_wishes_by_taker(user_id, group_id),
+    )
+    return (
+        wishes_count,
+        wishes_completed_by_others,
+        taken_wishes_count,
+        fulfilled_others_count,
+    )
+
+
 async def get_group_members_data(
     dialog_manager: DialogManager,
     i18n: TranslatorRunner,
@@ -390,50 +407,158 @@ async def get_group_members_data(
     current_group: Group | None,
     **kwargs,
 ) -> dict:
+    button_back = i18n.get("button-back")
     if current_group is None or current_group.admin_id != user.telegram_id:
         return {
             "text": i18n.get("message-group-not-admin"),
             "members": [],
             "has_members": False,
-            "button_back": i18n.get("button-back"),
+            "button_back": button_back,
         }
 
     repo = get_repository()
     member_ids = repo.list_group_members(current_group.id)
     blocked_ids = set(repo.list_blocked_members(current_group.id))
 
-    members = []
+    admins: list[int] = []
+    regular: list[int] = []
+    blocked: list[int] = []
+
     for user_id in member_ids:
-        label = member_label(user_id)
-        is_admin = user_id == current_group.admin_id
-        if is_admin:
-            button_label = f"{label} — {i18n.get('member-role-admin')}"
+        if user_id in blocked_ids:
+            blocked.append(user_id)
+        elif user_id == current_group.admin_id:
+            admins.append(user_id)
         else:
-            button_label = f"{label} — {i18n.get('button-block')}"
-        members.append({
-            "id": user_id,
-            "button_label": button_label,
-            "can_action": not is_admin,
-            "is_blocked": False,
-        })
+            regular.append(user_id)
 
     for user_id in blocked_ids:
-        if user_id in {m["id"] for m in members}:
-            continue
-        label = member_label(user_id)
-        members.append({
-            "id": user_id,
-            "button_label": f"{label} — {i18n.get('button-unblock')}",
-            "can_action": True,
-            "is_blocked": True,
-        })
+        if user_id not in member_ids:
+            blocked.append(user_id)
+
+    lines = [
+        i18n.get("message-group-members-title", groupName=current_group.name),
+        "",
+    ]
+    members: list[dict] = []
+    index = 1
+
+    if admins:
+        lines.append(i18n.get("message-group-members-admins-header"))
+        for user_id in admins:
+            lines.append(
+                i18n.get(
+                    "message-group-members-admin-line",
+                    name=member_short_name(user_id),
+                ),
+            )
+            members.append({
+                "id": user_id,
+                "button_label": f"{index}. {member_short_name(user_id)} 👑",
+            })
+            index += 1
+        lines.append("")
+
+    if regular:
+        lines.append(i18n.get("message-group-members-members-header"))
+        for user_id in regular:
+            lines.append(f"{index}. {member_label(user_id)}")
+            members.append({
+                "id": user_id,
+                "button_label": f"{index}. {member_short_name(user_id)}",
+            })
+            index += 1
+        lines.append("")
+
+    if blocked:
+        lines.append(i18n.get("message-group-members-blocked-header"))
+        for user_id in blocked:
+            lines.append(f"{index}. {member_label(user_id)}")
+            members.append({
+                "id": user_id,
+                "button_label": f"{index}. {member_short_name(user_id)} 🚫",
+            })
+            index += 1
+        lines.append("")
+
+    if members:
+        lines.append(i18n.get("message-group-members-select-prompt"))
 
     return {
-        "text": i18n.get("message-group-members-header"),
-        "empty_text": i18n.get("message-no-group-members"),
+        "text": "\n".join(lines) if members else i18n.get("message-no-group-members"),
         "members": members,
         "has_members": bool(members),
-        "button_back": i18n.get("button-back"),
+        "button_back": button_back,
+    }
+
+
+async def get_group_member_detail_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    user: User,
+    current_group: Group | None,
+    **kwargs,
+) -> dict:
+    button_back = i18n.get("button-back")
+    if current_group is None or current_group.admin_id != user.telegram_id:
+        return {
+            "text": i18n.get("message-group-not-admin"),
+            "show_toggle": False,
+            "button_toggle": "",
+            "button_back": button_back,
+        }
+
+    target_id = dialog_manager.dialog_data.get("selected_member_id")
+    if not target_id:
+        return {
+            "text": i18n.get("message-member-not-found"),
+            "show_toggle": False,
+            "button_toggle": "",
+            "button_back": button_back,
+        }
+
+    target_id = int(target_id)
+    repo = get_repository()
+    is_admin = target_id == current_group.admin_id
+    is_blocked = repo.is_blocked(current_group.id, target_id)
+
+    (
+        wishes_count,
+        wishes_completed_by_others,
+        taken_wishes_count,
+        fulfilled_others_count,
+    ) = _member_wish_stats(repo, target_id, current_group.id)
+
+    if is_admin:
+        role = i18n.get("member-role-admin")
+    else:
+        role = i18n.get("member-role-participant")
+
+    status = (
+        i18n.get("member-status-blocked")
+        if is_blocked
+        else i18n.get("member-status-active")
+    )
+
+    if is_blocked:
+        button_toggle = f"✅ {i18n.get('button-unblock')}"
+    else:
+        button_toggle = f"🚫 {i18n.get('button-block')}"
+
+    return {
+        "text": i18n.get(
+            "message-group-member-detail",
+            name=member_display_name(target_id),
+            role=role,
+            status=status,
+            wishesCount=wishes_count,
+            wishesCompletedByOthers=wishes_completed_by_others,
+            takenWishesCount=taken_wishes_count,
+            fulfilledOthersCount=fulfilled_others_count,
+        ),
+        "show_toggle": not is_admin,
+        "button_toggle": button_toggle,
+        "button_back": button_back,
     }
 
 

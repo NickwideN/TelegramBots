@@ -15,6 +15,7 @@ from bots.wish_bot.dialogs.menu.getters import (
     get_create_visibility_data,
     get_group_created_data,
     get_group_data,
+    get_group_member_detail_data,
     get_group_members_data,
     get_groups_select_data,
     get_language_data,
@@ -38,7 +39,8 @@ from bots.wish_bot.dialogs.menu.handlers import (
     on_create_group_public,
     on_delete_my_wish,
     on_language_back,
-    on_member_action,
+    on_member_block_toggle,
+    on_select_member,
     on_my_taken,
     on_my_wishes,
     on_nav_back,
@@ -344,16 +346,18 @@ public_groups_window = Window(
 
 group_members_window = Window(
     Format("{text}"),
-    Format("{empty_text}", when="not has_members"),
-    ListGroup(
-        Button(
-            Format("{item[button_label]}"),
-            id="member_action",
-            on_click=on_member_action,
+    Group(
+        ListGroup(
+            Button(
+                Format("{item[button_label]}"),
+                id="select_member",
+                on_click=on_select_member,
+            ),
+            id="members_list",
+            item_id_getter=lambda item: str(item["id"]),
+            items="members",
         ),
-        id="members_list",
-        item_id_getter=lambda item: str(item["id"]),
-        items="members",
+        width=3,
         when="has_members",
     ),
     Button(
@@ -363,6 +367,23 @@ group_members_window = Window(
     ),
     getter=get_group_members_data,
     state=MenuSG.group_members,
+)
+
+group_member_detail_window = Window(
+    Format("{text}"),
+    Button(
+        Format("{button_toggle}"),
+        id="member_toggle",
+        on_click=on_member_block_toggle,
+        when="show_toggle",
+    ),
+    Button(
+        Format("{button_back}"),
+        id="member_detail_back",
+        on_click=on_nav_back,
+    ),
+    getter=get_group_member_detail_data,
+    state=MenuSG.group_member_detail,
 )
 
 language_window = Window(
@@ -443,6 +464,7 @@ menu_dialog = Dialog(
     my_groups_window,
     public_groups_window,
     group_members_window,
+    group_member_detail_window,
     language_window,
     create_name_window,
     create_visibility_window,

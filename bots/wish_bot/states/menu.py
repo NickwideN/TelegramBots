@@ -15,6 +15,7 @@ class MenuSG(StatesGroup):
     my_groups = State()
     public_groups = State()
     group_members = State()
+    group_member_detail = State()
     language = State()
     create_name = State()
     create_visibility = State()
