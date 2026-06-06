@@ -44,11 +44,15 @@ message-no-group =
 
 message-joined-group = You joined group «{ $name }».
 
-message-start-in-group =
-    Hi! I'm the <b>Wish Bot</b> 💫
+message-menu-group-admin =
+    Group: <b>{ $groupName }</b>
 
-    You are in group <b>{ $groupName }</b>
-    In this bot, everyone can anonymously make a wish and fulfill someone else's. Try making your first wish!
+    👑 Your role: Administrator
+
+    Members: { $memberCount }
+
+message-menu-group-member =
+    Group: <b>{ $groupName }</b>
 
 message-joined-welcome =
     Hi! I'm the <b>Wish Bot</b> 💫
@@ -185,32 +189,33 @@ message-new-wish-notification =
 # Buttons
 button-take = Take
 button-complete = Done
-button-my-taken = My taken wishes
+button-my-taken = 🤝 My taken wishes
 button-delete = Delete
 button-public = Public
 button-private = Private
 button-toggle-public = Make public
 button-toggle-private = Make private
 button-show-invite = Show invite link
-button-group-members = Group members
-button-groups = Groups
-button-share-group = Share group
+button-group-members = 👥 Group members (admin)
+button-groups = 📂 Groups
+button-share-group = 🔗 Share group
+button-share-group-admin = 🔗 Share group (admin)
 button-share = Share
 button-start = 🚀 Start
 button-my-groups = 📂 My groups
 button-language = 🌐 Language
-button-my-wishes = My wishes
-button-subscribe = Get notifications
-button-unsubscribe = Disable notifications
-button-archive = Archive of completed wishes
+button-my-wishes = 📋 My wishes
+button-subscribe = 🔔 Get notifications
+button-unsubscribe = 🔕 Disable notifications
+button-archive = ✅ Archive of completed wishes
 button-back = Back
 button-block = Block
 button-unblock = Unblock
 button-language-russian = Русский
 button-language-english = English
 button-join-group = Join: { $name }
-button-make-wish = Make a wish
-button-open-wishes = Available wishes
+button-make-wish = ✨ Make a wish
+button-open-wishes = 🎁 Available wishes
 button-public-groups = 🌍 Public groups
 button-create-group = ➕ Create group
 

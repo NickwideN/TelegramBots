@@ -21,7 +21,14 @@ from bots.wish_bot.middlewares.create_group_flow import CreateGroupVisibilityMid
 from bots.wish_bot.middlewares.group_context import GroupContextMiddleware
 from bots.wish_bot.middlewares.i18n import TranslatorRunnerMiddleware
 from bots.wish_bot.middlewares.menu_message import MenuMessageMiddleware
-from bots.wish_bot.services.fsm_storage import PostgresFsmStorage, SqliteFsmStorage
+from bots.wish_bot.services.fsm_storage import (
+    PostgresFsmStorage,
+    SqliteFsmStorage,
+    register_state_groups,
+)
+from bots.wish_bot.states.group import CreateGroupSG
+from bots.wish_bot.states.menu import MenuSG
+from bots.wish_bot.states.wish import AddWishSG, CompleteWishSG
 from bots.wish_bot.utils.bot_info import set_bot_username
 from bots.wish_bot.utils.i18n import create_translator_hub
 
@@ -38,6 +45,8 @@ def _create_fsm_storage(config: Config):
 
 def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     """Bot + Dispatcher без подключения к БД."""
+    register_state_groups(MenuSG, CreateGroupSG, AddWishSG, CompleteWishSG)
+
     bot = Bot(
         token=config.tg_bot.token,
         default=DefaultBotProperties(parse_mode="HTML"),

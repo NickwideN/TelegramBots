@@ -44,10 +44,15 @@ message-no-group =
 
 message-joined-group = Вы вступили в группу «{ $name }».
 
-message-start-in-group =
-    Привет! Я <b>Бот Желаний</b> 💫
+message-menu-group-admin =
+    Группа: <b>{ $groupName }</b>
 
-    Вы находитесь в группе <b>{ $groupName }</b>
+    👑 Ваша роль: Администратор
+
+    Участников: { $memberCount }
+
+message-menu-group-member =
+    Группа: <b>{ $groupName }</b>
 
 message-joined-welcome =
     Привет! Я <b>Бот Желаний</b> 💫
@@ -184,32 +189,33 @@ message-new-wish-notification =
 # Кнопки
 button-take = Взять
 button-complete = Выполнено
-button-my-taken = Мои взятые желания
+button-my-taken = 🤝 Мои взятые желания
 button-delete = Удалить
 button-public = Публичная
 button-private = Приватная
 button-toggle-public = Сделать публичной
 button-toggle-private = Сделать приватной
 button-show-invite = Показать ссылку
-button-group-members = Участники группы
-button-groups = Группы
-button-share-group = Поделиться группой
+button-group-members = 👥 Участники группы (админ)
+button-groups = 📂 Группы
+button-share-group = 🔗 Поделиться группой
+button-share-group-admin = 🔗 Поделиться группой (админ)
 button-share = Поделиться
 button-start = 🚀 Начать
 button-my-groups = 📂 Мои группы
 button-language = 🌐 Язык
-button-my-wishes = Мои желания
-button-subscribe = Получать уведомления
-button-unsubscribe = Отключить уведомления
-button-archive = Архив выполненных желаний
+button-my-wishes = 📋 Мои желания
+button-subscribe = 🔔 Получать уведомления
+button-unsubscribe = 🔕 Отключить уведомления
+button-archive = ✅ Архив выполненных желаний
 button-back = Назад
 button-block = Заблокировать
 button-unblock = Разблокировать
 button-language-russian = Русский
 button-language-english = English
 button-join-group = Вступить: { $name }
-button-make-wish = Загадать желание
-button-open-wishes = Доступные желания
+button-make-wish = ✨ Загадать желание
+button-open-wishes = 🎁 Доступные желания
 button-public-groups = 🌍 Публичные группы
 button-create-group = ➕ Создать группу
 

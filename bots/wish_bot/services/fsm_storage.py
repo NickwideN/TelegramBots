@@ -9,10 +9,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from aiogram.exceptions import DataNotDictLikeError
-from aiogram.fsm.state import State
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.base import BaseStorage, StateType, StorageKey
 
 from bots.wish_bot.services.postgres_connect import PostgresConnectionFactory
+
+_STATE_BY_NAME: dict[str, State] = {}
 
 
 def _storage_key_to_str(key: StorageKey) -> str:
@@ -34,6 +36,37 @@ def _state_to_str(state: StateType | None) -> str | None:
     if isinstance(state, State):
         return state.state
     return state
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, State):
+        return value.state
+    if isinstance(value, Mapping):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def _dump_data(data: dict[str, Any]) -> str:
+    return json.dumps(_json_safe(data), ensure_ascii=False)
+
+
+def register_state_groups(*groups: type[StatesGroup]) -> None:
+    for group in groups:
+        for state in group.__all_states__:
+            if state.state:
+                _STATE_BY_NAME[state.state] = state
+
+
+def resolve_state(value: StateType | None) -> StateType | None:
+    if value is None or isinstance(value, State):
+        return value
+    if isinstance(value, str):
+        return _STATE_BY_NAME.get(value, value)
+    return value
 
 
 class SqliteFsmStorage(BaseStorage):
@@ -91,7 +124,7 @@ class SqliteFsmStorage(BaseStorage):
                 VALUES (?, NULL, ?)
                 ON CONFLICT(storage_key) DO UPDATE SET data_json = excluded.data_json
                 """,
-                (storage_key, json.dumps(data, ensure_ascii=False)),
+                (storage_key, _dump_data(data)),
             )
 
     async def get_data(self, key: StorageKey) -> dict[str, Any]:
@@ -169,7 +202,7 @@ class PostgresFsmStorage(BaseStorage):
                 VALUES (%s, NULL, %s::jsonb)
                 ON CONFLICT (storage_key) DO UPDATE SET data_json = EXCLUDED.data_json
                 """,
-                (storage_key, json.dumps(data, ensure_ascii=False)),
+                (storage_key, _dump_data(data)),
             )
             conn.commit()
         finally:

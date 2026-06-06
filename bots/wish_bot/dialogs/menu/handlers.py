@@ -14,6 +14,7 @@ from bots.wish_bot.handlers.wishes import (
     _send_my_taken_list,
 )
 from bots.wish_bot.services import get_repository
+from bots.wish_bot.services.fsm_storage import resolve_state
 from bots.wish_bot.services.repository import (
     CannotBlockAdminError,
     CannotBlockSelfError,
@@ -104,15 +105,15 @@ def _save_nav_back(dialog_manager: DialogManager) -> None:
     current_context = dialog_manager.current_context()
     if current_context:
         stack = dialog_manager.dialog_data.setdefault(_NAV_BACK_STACK_KEY, [])
-        stack.append(current_context.state)
+        stack.append(current_context.state.state)
 
 
 def _pop_nav_back(dialog_manager: DialogManager):
     stack = dialog_manager.dialog_data.get(_NAV_BACK_STACK_KEY)
     if not stack:
         legacy = dialog_manager.dialog_data.pop("nav_back_state", None)
-        return legacy
-    return stack.pop()
+        return resolve_state(legacy)
+    return resolve_state(stack.pop())
 
 
 async def on_nav_back(

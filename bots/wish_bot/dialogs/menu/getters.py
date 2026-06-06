@@ -77,7 +77,7 @@ async def get_group_data(
         "button_my_taken": i18n.get("button-my-taken"),
         "button_archive": i18n.get("button-archive"),
         "button_subscribe": i18n.get("button-subscribe"),
-        "button_share_group": i18n.get("button-share-group"),
+        "button_share_group": "",
         "button_group_members": i18n.get("button-group-members"),
         "button_groups": i18n.get("button-groups"),
         "button_language": i18n.get("button-language"),
@@ -95,13 +95,30 @@ async def get_group_data(
     subscribed = repo.is_subscribed_wishes(current_group.id, user.telegram_id)
     is_admin = current_group.admin_id == user.telegram_id
     show_share = current_group.is_public or is_admin
+    if show_share and not current_group.is_public:
+        button_share_group = i18n.get("button-share-group-admin")
+    elif show_share:
+        button_share_group = i18n.get("button-share-group")
+    else:
+        button_share_group = ""
+
+    if is_admin:
+        member_count = len(repo.list_group_members(current_group.id))
+        text = i18n.get(
+            "message-menu-group-admin",
+            groupName=current_group.name,
+            memberCount=member_count,
+        )
+    else:
+        text = i18n.get("message-menu-group-member", groupName=current_group.name)
 
     return {
         **base,
-        "text": i18n.get("message-start-in-group", groupName=current_group.name),
+        "text": text,
         "button_subscribe": (
             i18n.get("button-unsubscribe") if subscribed else i18n.get("button-subscribe")
         ),
+        "button_share_group": button_share_group,
         "show_share": show_share,
         "show_members": is_admin,
     }
