@@ -93,7 +93,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             ).fetchone()
-            return self.row_to_user(updated)
+            return row_to_user(updated)
 
     def get_user(self, telegram_id: int) -> User | None:
         with self._connect() as conn:
@@ -101,7 +101,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM users WHERE telegram_id = ?",
                 (telegram_id,),
             ).fetchone()
-            return self.row_to_user(row) if row else None
+            return row_to_user(row) if row else None
 
     def set_user_locale(self, telegram_id: int, locale: str) -> None:
         with self._connect() as conn:
@@ -153,7 +153,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM groups WHERE id = ?",
                 (group_id,),
             ).fetchone()
-            return self.row_to_group(row)
+            return row_to_group(row)
 
     def get_group(self, group_id: int) -> Group | None:
         with self._connect() as conn:
@@ -161,7 +161,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM groups WHERE id = ?",
                 (group_id,),
             ).fetchone()
-            return self.row_to_group(row) if row else None
+            return row_to_group(row) if row else None
 
     def get_group_by_invite(self, invite_code: str) -> Group | None:
         with self._connect() as conn:
@@ -169,14 +169,27 @@ class SqliteStorage(Repository):
                 "SELECT * FROM groups WHERE invite_code = ?",
                 (invite_code,),
             ).fetchone()
-            return self.row_to_group(row) if row else None
+            return row_to_group(row) if row else None
 
     def list_public_groups(self) -> list[Group]:
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT * FROM groups WHERE is_public = 1 ORDER BY id",
             ).fetchall()
-            return [self.row_to_group(r) for r in rows]
+            return [row_to_group(r) for r in rows]
+
+    def list_user_groups(self, user_id: int) -> list[Group]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT g.* FROM groups g
+                INNER JOIN group_members gm ON g.id = gm.group_id
+                WHERE gm.user_id = ?
+                ORDER BY g.name COLLATE NOCASE
+                """,
+                (user_id,),
+            ).fetchall()
+            return [row_to_group(r) for r in rows]
 
     def is_member(self, group_id: int, user_id: int) -> bool:
         with self._connect() as conn:
@@ -307,7 +320,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM groups WHERE id = ?",
                 (group_id,),
             ).fetchone()
-            return self.row_to_group(updated)
+            return row_to_group(updated)
 
     def create_wish(self, group_id: int, author_id: int, text: str) -> Wish:
         if not self.get_group(group_id):
@@ -327,7 +340,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM wishes WHERE id = ?",
                 (cursor.lastrowid,),
             ).fetchone()
-            return self.row_to_wish(row)
+            return row_to_wish(row)
 
     def list_open_wishes(self, group_id: int) -> list[OpenWish]:
         with self._connect() as conn:
@@ -347,7 +360,7 @@ class SqliteStorage(Repository):
                 f"SELECT * FROM wishes WHERE id = ? AND {WISH_NOT_DELETED}",
                 (wish_id,),
             ).fetchone()
-            return self.row_to_wish(row) if row else None
+            return row_to_wish(row) if row else None
 
     def take_wish(self, wish_id: int, taker_id: int) -> Wish:
         with self._connect() as conn:
@@ -357,7 +370,7 @@ class SqliteStorage(Repository):
             ).fetchone()
             if not row:
                 raise WishNotFoundError("Wish not found")
-            wish = self.row_to_wish(row)
+            wish = row_to_wish(row)
             if wish.status != WishStatus.OPEN:
                 raise WishAlreadyTakenError("Wish already taken")
             if wish.author_id == taker_id:
@@ -381,7 +394,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM wishes WHERE id = ?",
                 (wish_id,),
             ).fetchone()
-            return self.row_to_wish(updated)
+            return row_to_wish(updated)
 
     def list_taken_by_user(self, user_id: int, group_id: int) -> list[Wish]:
         with self._connect() as conn:
@@ -393,7 +406,7 @@ class SqliteStorage(Repository):
                 """.format(WISH_NOT_DELETED=WISH_NOT_DELETED),
                 (group_id, WishStatus.TAKEN, user_id),
             ).fetchall()
-            return [self.row_to_wish(r) for r in rows]
+            return [row_to_wish(r) for r in rows]
 
     def complete_wish(self, wish_id: int, taker_id: int, message: str) -> Wish:
         with self._connect() as conn:
@@ -403,7 +416,7 @@ class SqliteStorage(Repository):
             ).fetchone()
             if not row:
                 raise WishNotFoundError("Wish not found")
-            wish = self.row_to_wish(row)
+            wish = row_to_wish(row)
             if wish.taken_by_id != taker_id:
                 raise NotWishTakerError("Not the wish taker")
             if wish.status != WishStatus.TAKEN:
@@ -422,7 +435,7 @@ class SqliteStorage(Repository):
                 "SELECT * FROM wishes WHERE id = ?",
                 (wish_id,),
             ).fetchone()
-            return self.row_to_wish(updated)
+            return row_to_wish(updated)
 
     def list_wishes_by_author(self, author_id: int, group_id: int) -> list[Wish]:
         with self._connect() as conn:
@@ -434,7 +447,7 @@ class SqliteStorage(Repository):
                 """,
                 (group_id, author_id),
             ).fetchall()
-            return [self.row_to_wish(r) for r in rows]
+            return [row_to_wish(r) for r in rows]
 
     def delete_wish(self, wish_id: int, author_id: int) -> Wish:
         with self._connect() as conn:
@@ -444,7 +457,7 @@ class SqliteStorage(Repository):
             ).fetchone()
             if not row:
                 raise WishNotFoundError("Wish not found")
-            wish = self.row_to_wish(row)
+            wish = row_to_wish(row)
             if wish.author_id != author_id:
                 raise NotWishAuthorError("Not the wish author")
 
@@ -509,7 +522,7 @@ class SqliteStorage(Repository):
                 """,
                 (group_id, author_id, WishStatus.COMPLETED),
             ).fetchall()
-            return [self.row_to_wish(r) for r in rows]
+            return [row_to_wish(r) for r in rows]
 
     def list_completed_wishes_by_taker(self, taker_id: int, group_id: int) -> list[Wish]:
         with self._connect() as conn:
@@ -522,7 +535,7 @@ class SqliteStorage(Repository):
                 """,
                 (group_id, taker_id, WishStatus.COMPLETED),
             ).fetchall()
-            return [self.row_to_wish(r) for r in rows]
+            return [row_to_wish(r) for r in rows]
 
     def purge_user_data(self, telegram_id: int) -> None:
         with self._connect() as conn:

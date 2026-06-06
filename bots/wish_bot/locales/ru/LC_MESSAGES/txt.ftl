@@ -2,27 +2,12 @@
 help-text =
     Привет! Я <b>Бот желаний</b>.
 
-    В группе каждый может добавить желание. Участники видят общий анонимный список и могут взять желание на исполнение. Когда выполните — отправьте автору сообщение (анонимно).
+    В группе каждый может добавить желание. Участники видят общий анонимный список и могут взять желание на исполнение. Когда выполните — отправьте автору сообщение (анонимно)
 
-    <b>Команды:</b>
-    /group — текущая группа
-    /create_group — создать группу
-    /groups — публичные группы
-    /group_admin — настройки группы (админ)
-    /group_members — участники группы (админ)
-    /group_blocked — заблокированные (админ)
-    /add_wish — добавить желание
-    /wishes — доступные желания
-    /my_wishes — мои желания
-    /my_taken — мои взятые желания
-    /subscribe — уведомления о новых желаниях в группе
-    /unsubscribe — отключить уведомления
-    /archive — архив выполненных желаний
-    /language — язык
-    /help — эта справка
+    Чтобы открыть меню, нажмите /start
 
 message-no-group =
-    Вы не в группе. Создайте группу (/create_group) или вступите по ссылке / по списку (/groups).
+    Вы не в группе. Откройте меню (/start) и создайте группу или вступите в существующую.
 
 message-joined-group = Вы вступили в группу «{ $name }».
 message-start-no-group =
@@ -34,7 +19,6 @@ message-start-in-group =
     Привет! Я <b>Бот Желаний</b> 💫
 
     Вы находитесь в группе <b>{ $groupName }</b>
-    В этом боте каждый может анонимно загадать желание и исполнить чужое. Попробуй загадать первое желание
 
 message-joined-welcome =
     Привет! Я <b>Бот Желаний</b> 💫
@@ -47,10 +31,10 @@ message-did-not-understand = Упс, не понял тебя
 # Группы
 message-create-group-name = Введите название группы:
 message-create-group-visibility = Выберите видимость группы:
-message-create-group-expired = Сначала создай группу заново (/create_group)
+message-create-group-expired = Сначала создайте группу заново через меню
 message-group-created =
     Группа «{ $name }» создана.
-    Ссылка для приглашения:
+    Отправьте ссылку в ваш чат, чтобы начать обмениваться желаниями:
     { $link }
 
 message-current-group =
@@ -64,11 +48,12 @@ message-current-group-admin =
     Ссылка для приглашения:
     { $link }
 
-visibility-public = Публичная — видна в /groups
+visibility-public = Публичная — видна в списке публичных групп
 visibility-private = Приватная — только по ссылке
 
 message-invite-link = Ссылка приглашения:
 message-no-public-groups = Публичных групп пока нет.
+message-public-group-already-member = <b>{ $name }</b> — вы уже в этой группе
 
 message-group-admin =
     <b>Управление группой «{ $name }»</b>
@@ -78,10 +63,15 @@ message-group-admin =
 message-group-not-admin = Только администратор группы может менять настройки.
 message-group-visibility-changed = Видимость группы обновлена.
 
-message-group-members-header = <b>Участники группы</b>
-message-group-blocked-header = <b>Заблокированные</b>
-message-no-group-members = В группе нет других участников.
-message-no-blocked-members = Заблокированных пользователей нет.
+message-group-members-header = <b>Участники текущей группы</b>
+message-no-group-members = В группе нет участников.
+member-role-admin = админ
+message-groups-hub =
+    <b>{ $name }</b>
+    { $visibility }
+message-my-groups = <b>Мои группы</b>
+message-no-my-groups = Вы пока не состоите ни в одной группе.
+message-public-groups = <b>Публичные группы</b>
 message-member-blocked = Участник заблокирован.
 message-member-unblocked = Участник разблокирован.
 message-member-not-found = Участник не найден.
@@ -161,8 +151,15 @@ button-private = Приватная
 button-toggle-public = Сделать публичной
 button-toggle-private = Сделать приватной
 button-show-invite = Показать ссылку
-button-group-members = Участники
-button-group-blocked = Заблокированные
+button-group-members = Участники группы
+button-groups = Группы
+button-my-groups = Мои группы
+button-language = Язык
+button-my-wishes = Мои желания
+button-subscribe = Получать уведомления
+button-unsubscribe = Отключить уведомления
+button-archive = Архив выполненных желаний
+button-back = Назад
 button-block = Заблокировать
 button-unblock = Разблокировать
 button-language-russian = Русский
@@ -172,7 +169,6 @@ button-make-wish = Загадать желание
 button-open-wishes = Доступные желания
 button-public-groups = Публичные группы
 button-create-group = Создать группу
-button-help = Помощь
 
 message-choose-language = Выберите язык:
 message-language-selected = Язык изменён.

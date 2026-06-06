@@ -144,6 +144,10 @@ class Repository(ABC):
         pass
 
     @abstractmethod
+    def list_user_groups(self, user_id: int) -> list[Group]:
+        pass
+
+    @abstractmethod
     def is_member(self, group_id: int, user_id: int) -> bool:
         pass
 

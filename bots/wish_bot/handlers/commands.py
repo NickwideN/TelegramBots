@@ -1,112 +1,23 @@
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import Message
+from aiogram_dialog import DialogManager, StartMode
 from fluentogram import TranslatorRunner
 
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.services.repository import Group
+from bots.wish_bot.states.menu import MenuSG
 from bots.wish_bot.utils.send import answer_with_retry
 
 router = Router()
 
 
-def _language_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-language-russian"),
-                    callback_data="lang:ru",
-                ),
-                InlineKeyboardButton(
-                    text=i18n.get("button-language-english"),
-                    callback_data="lang:en",
-                ),
-            ],
-        ],
-    )
-
-
-def start_no_group_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-public-groups"),
-                    callback_data="menu:groups",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-create-group"),
-                    callback_data="menu:create_group",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-help"),
-                    callback_data="menu:help",
-                ),
-            ],
-        ],
-    )
-
-
-def join_welcome_keyboard(i18n: TranslatorRunner) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-make-wish"),
-                    callback_data="menu:add_wish",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-open-wishes"),
-                    callback_data="menu:wishes",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text=i18n.get("button-help"),
-                    callback_data="menu:help",
-                ),
-            ],
-        ],
-    )
-
-
-async def send_start_no_group(message: Message, i18n: TranslatorRunner) -> None:
-    await answer_with_retry(
-        message,
-        i18n.get("message-start-no-group"),
-        reply_markup=start_no_group_keyboard(i18n),
-    )
-
-
-async def send_start_in_group(
-    message: Message,
-    i18n: TranslatorRunner,
-    group_name: str,
+async def start_menu(
+    dialog_manager: DialogManager,
+    current_group: Group | None,
 ) -> None:
-    await answer_with_retry(
-        message,
-        i18n.get("message-start-in-group", groupName=group_name),
-        reply_markup=join_welcome_keyboard(i18n),
-    )
-
-
-async def send_join_welcome(
-    message: Message,
-    i18n: TranslatorRunner,
-    group_name: str,
-) -> None:
-    await answer_with_retry(
-        message,
-        i18n.get("message-joined-welcome", groupName=group_name),
-        reply_markup=join_welcome_keyboard(i18n),
-    )
+    state = MenuSG.group if current_group else MenuSG.no_group
+    await dialog_manager.start(state=state, mode=StartMode.RESET_STACK)
 
 
 async def _join_group_by_code(
@@ -114,6 +25,7 @@ async def _join_group_by_code(
     invite_code: str,
     i18n: TranslatorRunner,
     user_id: int,
+    dialog_manager: DialogManager,
 ) -> bool:
     repo = get_repository()
     group = repo.get_group_by_invite(invite_code)
@@ -131,7 +43,7 @@ async def _join_group_by_code(
     if not repo.is_member(group.id, user_id):
         repo.add_member(group.id, user_id)
     repo.set_current_group(user_id, group.id)
-    await send_join_welcome(message, i18n, group.name)
+    await dialog_manager.start(state=MenuSG.group, mode=StartMode.RESET_STACK)
     return True
 
 
@@ -141,6 +53,7 @@ async def cmd_start(
     command: CommandObject,
     i18n: TranslatorRunner,
     current_group: Group | None,
+    dialog_manager: DialogManager,
 ) -> None:
     """Обработчик команды /start."""
     user_id = message.from_user.id if message.from_user else 0
@@ -149,57 +62,13 @@ async def cmd_start(
     if args.startswith("join_"):
         invite_code = args[5:]
         if invite_code:
-            await _join_group_by_code(message, invite_code, i18n, user_id)
+            await _join_group_by_code(message, invite_code, i18n, user_id, dialog_manager)
             return
 
-    if current_group is None:
-        await send_start_no_group(message, i18n)
-        return
-
-    await send_start_in_group(message, i18n, current_group.name)
+    await start_menu(dialog_manager, current_group)
 
 
 @router.message(Command(commands=["help"]))
 async def cmd_help(message: Message, i18n: TranslatorRunner) -> None:
     """Обработчик команды /help."""
     await answer_with_retry(message, i18n.get("help-text"))
-
-
-@router.callback_query(F.data == "menu:help")
-async def callback_menu_help(callback: CallbackQuery, i18n: TranslatorRunner) -> None:
-    await callback.answer()
-    if callback.message:
-        await answer_with_retry(callback.message, i18n.get("help-text"))
-
-
-@router.message(Command(commands=["language"]))
-async def cmd_language(message: Message, i18n: TranslatorRunner) -> None:
-    """Обработчик команды /language."""
-    await answer_with_retry(
-        message,
-        i18n.get("message-choose-language"),
-        reply_markup=_language_keyboard(i18n),
-    )
-
-
-@router.callback_query(F.data.startswith("lang:"))
-async def callback_language(
-    callback: CallbackQuery,
-    i18n: TranslatorRunner,
-    **kwargs,
-) -> None:
-    locale = callback.data.split(":")[1]
-    if locale not in ("ru", "en"):
-        await callback.answer()
-        return
-
-    user_id = callback.from_user.id
-    repo = get_repository()
-    repo.set_user_locale(user_id, locale)
-
-    hub = kwargs.get("_translator_hub")
-    if hub:
-        i18n = hub.get_translator_by_locale(locale=locale)
-    await callback.answer(i18n.get("message-language-selected"))
-    if callback.message:
-        await callback.message.edit_reply_markup(reply_markup=None)

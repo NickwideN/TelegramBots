@@ -1,6 +1,5 @@
 from aiogram import Bot, F, Router
-from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery
 from fluentogram import TranslatorHub, TranslatorRunner
 
 from bots.wish_bot.services import get_repository
@@ -12,31 +11,8 @@ from bots.wish_bot.services.repository import (
     User,
     UserNotMemberError,
 )
-from bots.wish_bot.utils.send import answer_with_retry
 
 router = Router()
-
-
-def _require_admin(
-    current_group: Group | None,
-    user: User,
-    i18n: TranslatorRunner,
-) -> Group | None:
-    if current_group is None:
-        return None
-    if current_group.admin_id != user.telegram_id:
-        return None
-    return current_group
-
-
-def _member_label(user_id: int) -> str:
-    repo = get_repository()
-    member = repo.get_user(user_id)
-    if not member:
-        return str(user_id)
-    name = member.first_name or "—"
-    username_part = f" (@{member.username})" if member.username else ""
-    return f"{name}{username_part}"
 
 
 def _user_i18n(user_id: int, hub: TranslatorHub, fallback: TranslatorRunner) -> TranslatorRunner:
@@ -44,111 +20,6 @@ def _user_i18n(user_id: int, hub: TranslatorHub, fallback: TranslatorRunner) -> 
     user = repo.get_user(user_id)
     locale = user.locale if user and user.locale in ("ru", "en") else "ru"
     return hub.get_translator_by_locale(locale=locale)
-
-
-async def _send_members_list(
-    message: Message,
-    i18n: TranslatorRunner,
-    group: Group,
-) -> None:
-    repo = get_repository()
-    member_ids = [
-        uid for uid in repo.list_group_members(group.id)
-        if uid != group.admin_id
-    ]
-
-    if not member_ids:
-        await answer_with_retry(message, i18n.get("message-no-group-members"))
-        return
-
-    await answer_with_retry(message, i18n.get("message-group-members-header"))
-
-    for user_id in member_ids:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=i18n.get("button-block"),
-                        callback_data=f"block_member:{group.id}:{user_id}",
-                    ),
-                ],
-            ],
-        )
-        await answer_with_retry(
-            message,
-            _member_label(user_id),
-            reply_markup=keyboard,
-        )
-
-
-async def _send_blocked_list(
-    message: Message,
-    i18n: TranslatorRunner,
-    group: Group,
-) -> None:
-    repo = get_repository()
-    blocked_ids = repo.list_blocked_members(group.id)
-
-    if not blocked_ids:
-        await answer_with_retry(message, i18n.get("message-no-blocked-members"))
-        return
-
-    await answer_with_retry(message, i18n.get("message-group-blocked-header"))
-
-    for user_id in blocked_ids:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=i18n.get("button-unblock"),
-                        callback_data=f"unblock_member:{group.id}:{user_id}",
-                    ),
-                ],
-            ],
-        )
-        await answer_with_retry(
-            message,
-            _member_label(user_id),
-            reply_markup=keyboard,
-        )
-
-
-@router.message(Command(commands=["group_members"]))
-async def cmd_group_members(
-    message: Message,
-    i18n: TranslatorRunner,
-    user: User,
-    current_group: Group | None,
-) -> None:
-    """Список участников группы (только админ)."""
-    group = _require_admin(current_group, user, i18n)
-    if current_group is None:
-        await answer_with_retry(message, i18n.get("message-no-group"))
-        return
-    if group is None:
-        await answer_with_retry(message, i18n.get("message-group-not-admin"))
-        return
-
-    await _send_members_list(message, i18n, group)
-
-
-@router.message(Command(commands=["group_blocked"]))
-async def cmd_group_blocked(
-    message: Message,
-    i18n: TranslatorRunner,
-    user: User,
-    current_group: Group | None,
-) -> None:
-    """Список заблокированных (только админ)."""
-    group = _require_admin(current_group, user, i18n)
-    if current_group is None:
-        await answer_with_retry(message, i18n.get("message-no-group"))
-        return
-    if group is None:
-        await answer_with_retry(message, i18n.get("message-group-not-admin"))
-        return
-
-    await _send_blocked_list(message, i18n, group)
 
 
 @router.callback_query(F.data.startswith("block_member:"))

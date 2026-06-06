@@ -2,27 +2,12 @@
 help-text =
     Hi! I'm the <b>Wish Bot</b>.
 
-    In a group, anyone can add a wish. Members see an anonymous list and can take a wish to fulfill. When done, send the author a message (anonymously).
+    In a group, anyone can add a wish. Members see an anonymous list and can take a wish to fulfill. When done, send the author a message (anonymously)
 
-    <b>Commands:</b>
-    /group — current group
-    /create_group — create a group
-    /groups — public groups
-    /group_admin — group settings (admin)
-    /group_members — group members (admin)
-    /group_blocked — blocked users (admin)
-    /add_wish — add a wish
-    /wishes — open wishes
-    /my_wishes — my wishes
-    /my_taken — my taken wishes
-    /subscribe — notifications for new wishes in the group
-    /unsubscribe — turn off notifications
-    /archive — archive of completed wishes
-    /language — language
-    /help — this help
+    To open the menu, tap /start
 
 message-no-group =
-    You are not in a group. Create one (/create_group) or join via link / list (/groups).
+    You are not in a group. Open the menu (/start) and create a group or join an existing one.
 
 message-joined-group = You joined group «{ $name }».
 message-start-no-group =
@@ -47,7 +32,7 @@ message-did-not-understand = Oops, I didn't understand you
 # Groups
 message-create-group-name = Enter the group name:
 message-create-group-visibility = Choose group visibility:
-message-create-group-expired = Please create a group again (/create_group)
+message-create-group-expired = Please create a group again via the menu
 message-group-created =
     Group «{ $name }» created.
     Invite link:
@@ -64,11 +49,12 @@ message-current-group-admin =
     Invite link:
     { $link }
 
-visibility-public = Public — listed in /groups
+visibility-public = Public — listed in public groups
 visibility-private = Private — invite link only
 
 message-invite-link = Invite link:
 message-no-public-groups = No public groups yet.
+message-public-group-already-member = <b>{ $name }</b> — you are already in this group
 
 message-group-admin =
     <b>Manage group «{ $name }»</b>
@@ -79,9 +65,14 @@ message-group-not-admin = Only the group admin can change settings.
 message-group-visibility-changed = Group visibility updated.
 
 message-group-members-header = <b>Group members</b>
-message-group-blocked-header = <b>Blocked users</b>
-message-no-group-members = There are no other members in the group.
-message-no-blocked-members = No blocked users.
+message-no-group-members = There are no members in the group.
+member-role-admin = admin
+message-groups-hub =
+    <b>{ $name }</b>
+    { $visibility }
+message-my-groups = <b>My groups</b>
+message-no-my-groups = You are not a member of any group yet.
+message-public-groups = <b>Public groups</b>
 message-member-blocked = Member blocked.
 message-member-unblocked = Member unblocked.
 message-member-not-found = Member not found.
@@ -161,8 +152,15 @@ button-private = Private
 button-toggle-public = Make public
 button-toggle-private = Make private
 button-show-invite = Show invite link
-button-group-members = Members
-button-group-blocked = Blocked
+button-group-members = Group members
+button-groups = Groups
+button-my-groups = My groups
+button-language = Language
+button-my-wishes = My wishes
+button-subscribe = Get notifications
+button-unsubscribe = Disable notifications
+button-archive = Archive of completed wishes
+button-back = Back
 button-block = Block
 button-unblock = Unblock
 button-language-russian = Русский
@@ -172,7 +170,6 @@ button-make-wish = Make a wish
 button-open-wishes = Available wishes
 button-public-groups = Public groups
 button-create-group = Create group
-button-help = Help
 
 message-choose-language = Choose language:
 message-language-selected = Language changed.

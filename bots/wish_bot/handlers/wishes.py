@@ -2,9 +2,10 @@ import asyncio
 from datetime import datetime
 
 from aiogram import Bot, F, Router
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram_dialog import DialogManager, StartMode
 from fluentogram import TranslatorHub, TranslatorRunner
 
 from bots.wish_bot.services import get_repository
@@ -18,6 +19,7 @@ from bots.wish_bot.services.repository import (
     WishNotFoundError,
     WishStatus,
 )
+from bots.wish_bot.states.menu import MenuSG
 from bots.wish_bot.states.wish import AddWishSG, CompleteWishSG
 from bots.wish_bot.utils.notify import notify_new_wish
 from bots.wish_bot.utils.send import answer_with_retry
@@ -183,17 +185,6 @@ async def _send_my_taken_list(
         )
 
 
-@router.message(Command(commands=["add_wish"]))
-async def cmd_add_wish(
-    message: Message,
-    i18n: TranslatorRunner,
-    state: FSMContext,
-    current_group: Group | None,
-) -> None:
-    """Добавить желание."""
-    await prompt_add_wish(message, i18n, state, current_group)
-
-
 async def prompt_add_wish(
     message: Message,
     i18n: TranslatorRunner,
@@ -215,6 +206,7 @@ async def process_add_wish(
     state: FSMContext,
     user: User,
     current_group: Group | None,
+    dialog_manager: DialogManager,
     **kwargs,
 ) -> None:
     if current_group is None:
@@ -231,22 +223,13 @@ async def process_add_wish(
     wish = repo.create_wish(current_group.id, user.telegram_id, text)
     await state.clear()
     await answer_with_retry(message, i18n.get("message-wish-added"))
+    await dialog_manager.start(state=MenuSG.group, mode=StartMode.RESET_STACK)
 
     hub: TranslatorHub | None = kwargs.get("_translator_hub")
     if hub:
         asyncio.create_task(
             notify_new_wish(bot, current_group, wish, user.telegram_id, hub),
         )
-
-
-@router.message(Command(commands=["wishes"]))
-async def cmd_wishes(
-    message: Message,
-    i18n: TranslatorRunner,
-    current_group: Group | None,
-) -> None:
-    """Анонимный список открытых желаний."""
-    await send_open_wishes(message, i18n, current_group)
 
 
 async def send_open_wishes(
@@ -278,29 +261,6 @@ async def send_open_wishes(
             ],
         )
         await answer_with_retry(message, wish.text, reply_markup=keyboard)
-
-
-@router.callback_query(F.data == "menu:add_wish")
-async def callback_menu_add_wish(
-    callback: CallbackQuery,
-    i18n: TranslatorRunner,
-    state: FSMContext,
-    current_group: Group | None,
-) -> None:
-    await callback.answer()
-    if callback.message:
-        await prompt_add_wish(callback.message, i18n, state, current_group)
-
-
-@router.callback_query(F.data == "menu:wishes")
-async def callback_menu_wishes(
-    callback: CallbackQuery,
-    i18n: TranslatorRunner,
-    current_group: Group | None,
-) -> None:
-    await callback.answer()
-    if callback.message:
-        await send_open_wishes(callback.message, i18n, current_group)
 
 
 @router.callback_query(F.data.startswith("take:"))
@@ -370,45 +330,6 @@ async def callback_my_taken_list(
         )
 
 
-@router.message(Command(commands=["my_wishes"]))
-async def cmd_my_wishes(
-    message: Message,
-    i18n: TranslatorRunner,
-    user: User,
-    current_group: Group | None,
-) -> None:
-    """Список желаний автора в текущей группе."""
-    if current_group is None:
-        await answer_with_retry(message, i18n.get("message-no-group"))
-        return
-
-    repo = get_repository()
-    wishes = repo.list_wishes_by_author(user.telegram_id, current_group.id)
-
-    if not wishes:
-        await answer_with_retry(message, i18n.get("message-no-my-wishes"))
-        return
-
-    await answer_with_retry(message, i18n.get("message-my-wishes-header"))
-
-    for wish in wishes:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=i18n.get("button-delete"),
-                        callback_data=f"delete_wish:{wish.id}",
-                    ),
-                ],
-            ],
-        )
-        await answer_with_retry(
-            message,
-            _wish_list_text(i18n, wish),
-            reply_markup=keyboard,
-        )
-
-
 @router.callback_query(F.data.startswith("delete_wish:"))
 async def callback_delete_wish(
     callback: CallbackQuery,
@@ -460,42 +381,6 @@ async def callback_delete_wish(
     await callback.answer(i18n.get("message-wish-deleted"))
     if callback.message:
         await callback.message.delete()
-
-
-@router.message(Command(commands=["archive"]))
-async def cmd_archive(
-    message: Message,
-    i18n: TranslatorRunner,
-    user: User,
-    current_group: Group | None,
-) -> None:
-    """Архив выполненных желаний в текущей группе."""
-    if current_group is None:
-        await answer_with_retry(message, i18n.get("message-no-group"))
-        return
-
-    text = _build_archive_text(i18n, user.telegram_id, current_group.id)
-    await answer_with_retry(message, text)
-
-
-@router.message(Command(commands=["my_taken"]))
-async def cmd_my_taken(
-    message: Message,
-    i18n: TranslatorRunner,
-    user: User,
-    current_group: Group | None,
-) -> None:
-    """Список взятых желаний."""
-    if current_group is None:
-        await answer_with_retry(message, i18n.get("message-no-group"))
-        return
-
-    await _send_my_taken_list(
-        message,
-        i18n,
-        user.telegram_id,
-        current_group.id,
-    )
 
 
 @router.callback_query(F.data.startswith("complete:"))

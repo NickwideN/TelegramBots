@@ -188,6 +188,19 @@ class PostgresStorage(Repository):
             ).fetchall()
             return [row_to_group(r) for r in rows]
 
+    def list_user_groups(self, user_id: int) -> list[Group]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT g.* FROM groups g
+                INNER JOIN group_members gm ON g.id = gm.group_id
+                WHERE gm.user_id = %s
+                ORDER BY g.name
+                """,
+                (user_id,),
+            ).fetchall()
+            return [row_to_group(r) for r in rows]
+
     def is_member(self, group_id: int, user_id: int) -> bool:
         with self._connect() as conn:
             row = conn.execute(

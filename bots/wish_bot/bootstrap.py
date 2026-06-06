@@ -3,10 +3,12 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram_dialog import setup_dialogs
 from fluentogram import TranslatorHub
 
 from bots.wish_bot.config_data import Config
-from bots.wish_bot.handlers import commands, dev, fallback, groups, moderation, subscriptions, wishes
+from bots.wish_bot.dialogs import menu_dialog
+from bots.wish_bot.handlers import commands, dev, fallback, groups, moderation, wishes
 from bots.wish_bot.middlewares.create_group_flow import CreateGroupVisibilityMiddleware
 from bots.wish_bot.middlewares.group_context import GroupContextMiddleware
 from bots.wish_bot.middlewares.i18n import TranslatorRunnerMiddleware
@@ -36,9 +38,11 @@ def setup_bot_app(config: Config) -> tuple[Bot, Dispatcher, TranslatorHub]:
     dp.include_router(dev.router)
     dp.include_router(groups.router)
     dp.include_router(moderation.router)
-    dp.include_router(subscriptions.router)
     dp.include_router(wishes.router)
+    dp.include_router(menu_dialog)
     dp.include_router(fallback.router)
+
+    setup_dialogs(dp)
 
     return bot, dp, translator_hub
 
