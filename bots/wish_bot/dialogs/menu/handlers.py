@@ -49,6 +49,15 @@ async def _go_to_main_menu(dialog_manager: DialogManager) -> None:
         await dialog_manager.switch_to(MenuSG.no_group)
 
 
+async def on_welcome_start(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    await callback.answer()
+    await _go_to_main_menu(dialog_manager)
+
+
 async def on_open_language(
     callback: CallbackQuery,
     button: Button,
@@ -72,6 +81,85 @@ async def on_language_back(
         await dialog_manager.switch_to(back_state)
         return
     await _go_to_main_menu(dialog_manager)
+
+
+def _save_nav_back(dialog_manager: DialogManager) -> None:
+    current_context = dialog_manager.current_context()
+    if current_context:
+        dialog_manager.dialog_data["nav_back_state"] = current_context.state
+
+
+async def on_nav_back(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    await callback.answer()
+    back_state = dialog_manager.dialog_data.get("nav_back_state")
+    if back_state:
+        await dialog_manager.switch_to(back_state)
+        return
+    await _go_to_main_menu(dialog_manager)
+
+
+async def on_open_groups_select(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.groups_select)
+
+
+async def on_open_my_groups(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.my_groups)
+
+
+async def on_open_public_groups(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.public_groups)
+
+
+async def on_open_create_group(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.create_name)
+
+
+async def on_open_share(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.share_group)
+
+
+async def on_open_members(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager,
+) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.group_members)
 
 
 async def _send_my_wishes(message: Message, i18n: TranslatorRunner, user: User, group: Group) -> None:
@@ -304,6 +392,7 @@ async def on_create_group_name(
         return
 
     dialog_manager.dialog_data["group_name"] = name
+    dialog_manager.dialog_data["nav_back_state"] = MenuSG.create_name
     await dialog_manager.switch_to(MenuSG.create_visibility)
 
 

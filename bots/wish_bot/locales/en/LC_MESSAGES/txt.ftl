@@ -4,16 +4,45 @@ help-text =
 
     In a group, anyone can add a wish. Members see an anonymous list and can take a wish to fulfill. When done, send the author a message (anonymously)
 
-    To open the menu, tap /start
+    To open the menu, tap /menu
+
+message-welcome =
+    👋 Hi! I'm the <b>Wish Bot</b> ✨
+
+    Here you can anonymously make wishes and fulfill wishes for other members.
+
+    To get started, tap the «Start» button 👇
+
+message-welcome-invite =
+    👋 Hi! I'm the <b>Wish Bot</b> ✨
+
+    You've been invited to group <b>{ $groupName }</b>.
+
+    Here you can anonymously make wishes and fulfill wishes for other members.
+
+    To continue, tap the «Start» button 👇
+
+message-welcome-invite-invalid =
+    👋 Hi! I'm the <b>Wish Bot</b> ✨
+
+    Here you can anonymously make wishes and fulfill wishes for other members.
+
+    You were invited to a group, but the link is incorrect or no longer valid.
+
+    Ask the administrator for a new link or tap the «Start» button 👇
+
+message-menu-no-group =
+    To work with wishes, you need to be a member of at least one group.
+
+    You can:
+    • join a public group;
+    • create your own group;
+    • get an invite link from an administrator.
 
 message-no-group =
-    You are not in a group. Open the menu (/start) and create a group or join an existing one.
+    You are not in a group. Open the menu (/menu) and create a group or join an existing one.
 
 message-joined-group = You joined group «{ $name }».
-message-start-no-group =
-    Hi! I'm the <b>Wish Bot</b> 💫
-
-    In this bot, everyone can anonymously make a wish and fulfill someone else's. But first you need to join a group. Join a public group, create your own, or ask your admin to send you a link to your group.
 
 message-start-in-group =
     Hi! I'm the <b>Wish Bot</b> 💫
@@ -67,9 +96,14 @@ message-group-visibility-changed = Group visibility updated.
 message-group-members-header = <b>Group members</b>
 message-no-group-members = There are no members in the group.
 member-role-admin = admin
-message-groups-hub =
-    <b>{ $name }</b>
-    { $visibility }
+message-groups-select = <b>Groups</b>
+message-share-group =
+    Group <b>{ $name }</b>
+
+    { $link }
+message-share-invite =
+    Join group «{ $name }» in Wish Bot:
+    { $link }
 message-my-groups = <b>My groups</b>
 message-no-my-groups = You are not a member of any group yet.
 message-public-groups = <b>Public groups</b>
@@ -154,8 +188,11 @@ button-toggle-private = Make private
 button-show-invite = Show invite link
 button-group-members = Group members
 button-groups = Groups
-button-my-groups = My groups
-button-language = Language
+button-share-group = Share group
+button-share = Share
+button-start = 🚀 Start
+button-my-groups = 📂 My groups
+button-language = 🌐 Language
 button-my-wishes = My wishes
 button-subscribe = Get notifications
 button-unsubscribe = Disable notifications
@@ -168,8 +205,8 @@ button-language-english = English
 button-join-group = Join: { $name }
 button-make-wish = Make a wish
 button-open-wishes = Available wishes
-button-public-groups = Public groups
-button-create-group = Create group
+button-public-groups = 🌍 Public groups
+button-create-group = ➕ Create group
 
 message-choose-language = Choose language:
 message-language-selected = Language changed.

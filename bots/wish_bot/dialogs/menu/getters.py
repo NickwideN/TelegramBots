@@ -3,13 +3,50 @@ from fluentogram import TranslatorRunner
 
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.services.repository import Group, User
+from bots.wish_bot.utils.bot_info import make_invite_link
 from bots.wish_bot.utils.members import member_label
 
 
-def _visibility_text(i18n: TranslatorRunner, is_public: bool) -> str:
-    if is_public:
-        return i18n.get("visibility-public")
-    return i18n.get("visibility-private")
+async def get_welcome_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    **kwargs,
+) -> dict:
+    return {
+        "text": i18n.get("message-welcome"),
+        "button_start": i18n.get("button-start"),
+    }
+
+
+async def get_welcome_invite_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    **kwargs,
+) -> dict:
+    start_data = dialog_manager.start_data or {}
+    group_name = start_data.get("group_name", "")
+    if not group_name:
+        invite_code = start_data.get("invite_code", "").strip()
+        if invite_code:
+            group = get_repository().get_group_by_invite(invite_code)
+            if group:
+                group_name = group.name
+
+    return {
+        "text": i18n.get("message-welcome-invite", groupName=group_name),
+        "button_start": i18n.get("button-start"),
+    }
+
+
+async def get_welcome_invite_invalid_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    **kwargs,
+) -> dict:
+    return {
+        "text": i18n.get("message-welcome-invite-invalid"),
+        "button_start": i18n.get("button-start"),
+    }
 
 
 async def get_no_group_data(
@@ -18,7 +55,7 @@ async def get_no_group_data(
     **kwargs,
 ) -> dict:
     return {
-        "text": i18n.get("message-start-no-group"),
+        "text": i18n.get("message-menu-no-group"),
         "button_my_groups": i18n.get("button-my-groups"),
         "button_public_groups": i18n.get("button-public-groups"),
         "button_create_group": i18n.get("button-create-group"),
@@ -33,70 +70,81 @@ async def get_group_data(
     current_group: Group | None,
     **kwargs,
 ) -> dict:
-    if current_group is None:
-        return {
-            "text": i18n.get("message-no-group"),
-            "button_groups": i18n.get("button-groups"),
-            "button_add_wish": i18n.get("button-make-wish"),
-            "button_my_wishes": i18n.get("button-my-wishes"),
-            "button_open_wishes": i18n.get("button-open-wishes"),
-            "button_my_taken": i18n.get("button-my-taken"),
-            "button_subscribe": i18n.get("button-subscribe"),
-            "button_archive": i18n.get("button-archive"),
-            "button_language": i18n.get("button-language"),
-            "is_subscribed": False,
-        }
-
-    repo = get_repository()
-    subscribed = repo.is_subscribed_wishes(current_group.id, user.telegram_id)
-    return {
-        "text": i18n.get("message-start-in-group", groupName=current_group.name),
-        "button_groups": i18n.get("button-groups"),
+    base = {
         "button_add_wish": i18n.get("button-make-wish"),
         "button_my_wishes": i18n.get("button-my-wishes"),
         "button_open_wishes": i18n.get("button-open-wishes"),
         "button_my_taken": i18n.get("button-my-taken"),
+        "button_archive": i18n.get("button-archive"),
+        "button_subscribe": i18n.get("button-subscribe"),
+        "button_share_group": i18n.get("button-share-group"),
+        "button_group_members": i18n.get("button-group-members"),
+        "button_groups": i18n.get("button-groups"),
+        "button_language": i18n.get("button-language"),
+        "show_share": False,
+        "show_members": False,
+    }
+
+    if current_group is None:
+        return {
+            **base,
+            "text": i18n.get("message-no-group"),
+        }
+
+    repo = get_repository()
+    subscribed = repo.is_subscribed_wishes(current_group.id, user.telegram_id)
+    is_admin = current_group.admin_id == user.telegram_id
+    show_share = current_group.is_public or is_admin
+
+    return {
+        **base,
+        "text": i18n.get("message-start-in-group", groupName=current_group.name),
         "button_subscribe": (
             i18n.get("button-unsubscribe") if subscribed else i18n.get("button-subscribe")
         ),
-        "button_archive": i18n.get("button-archive"),
-        "button_language": i18n.get("button-language"),
-        "is_subscribed": subscribed,
+        "show_share": show_share,
+        "show_members": is_admin,
     }
 
 
-async def get_groups_hub_data(
+async def get_groups_select_data(
     dialog_manager: DialogManager,
     i18n: TranslatorRunner,
-    user: User,
+    **kwargs,
+) -> dict:
+    return {
+        "text": i18n.get("message-groups-select"),
+        "button_my_groups": i18n.get("button-my-groups"),
+        "button_public_groups": i18n.get("button-public-groups"),
+        "button_create_group": i18n.get("button-create-group"),
+        "button_back": i18n.get("button-back"),
+    }
+
+
+async def get_share_group_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
     current_group: Group | None,
     **kwargs,
 ) -> dict:
     if current_group is None:
         return {
             "text": i18n.get("message-no-group"),
-            "button_my_groups": i18n.get("button-my-groups"),
-            "button_public_groups": i18n.get("button-public-groups"),
-            "button_create_group": i18n.get("button-create-group"),
-            "button_group_members": i18n.get("button-group-members"),
+            "button_share": i18n.get("button-share"),
+            "share_query": "",
             "button_back": i18n.get("button-back"),
-            "show_members": False,
         }
 
-    visibility = _visibility_text(i18n, current_group.is_public)
-    is_admin = current_group.admin_id == user.telegram_id
+    link = make_invite_link(current_group.invite_code)
     return {
         "text": i18n.get(
-            "message-groups-hub",
+            "message-share-group",
             name=current_group.name,
-            visibility=visibility,
+            link=link,
         ),
-        "button_my_groups": i18n.get("button-my-groups"),
-        "button_public_groups": i18n.get("button-public-groups"),
-        "button_create_group": i18n.get("button-create-group"),
-        "button_group_members": i18n.get("button-group-members"),
+        "button_share": i18n.get("button-share"),
+        "share_query": f"share_{current_group.invite_code}",
         "button_back": i18n.get("button-back"),
-        "show_members": is_admin,
     }
 
 
@@ -165,14 +213,12 @@ async def get_group_members_data(
         is_admin = user_id == current_group.admin_id
         if is_admin:
             button_label = f"{label} — {i18n.get('member-role-admin')}"
-            can_action = False
         else:
             button_label = f"{label} — {i18n.get('button-block')}"
-            can_action = True
         members.append({
             "id": user_id,
             "button_label": button_label,
-            "can_action": can_action,
+            "can_action": not is_admin,
             "is_blocked": False,
         })
 
