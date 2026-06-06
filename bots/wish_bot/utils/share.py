@@ -21,5 +21,17 @@ def build_share_invite_text(i18n: TranslatorRunner, group: Group, link: str) -> 
     return _clean_share_text(i18n.get(key, name=group.name, link=link))
 
 
-def make_telegram_share_url(message_text: str) -> str:
-    return f"https://t.me/share/url?text={quote(message_text, safe='')}"
+def build_share_invite_body(i18n: TranslatorRunner, group: Group) -> str:
+    if group.is_public:
+        key = "message-share-invite-public-body"
+    else:
+        key = "message-share-invite-private-body"
+    return _clean_share_text(i18n.get(key, name=group.name))
+
+
+def make_telegram_share_url(invite_link: str, message_text: str) -> str:
+    return (
+        "https://t.me/share/url?"
+        f"url={quote(invite_link, safe='')}"
+        f"&text={quote(message_text, safe='')}"
+    )

@@ -7,10 +7,13 @@ import logging
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.state import State
-from aiogram_dialog import DialogManager
+from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog.manager.message_manager import _combine
 
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.states.menu import MenuSG
+
+_NAV_BACK_STACK_KEY = "nav_back_stack"
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,31 @@ MENU_ROOT_STATES: frozenset[State] = frozenset(
         MenuSG.group,
     }
 )
+
+
+def root_dialog_manager(dialog_manager: DialogManager) -> DialogManager:
+    manager = dialog_manager
+    while getattr(manager, "manager", None) is not None:
+        manager = manager.manager
+    return manager
+
+
+async def send_main_menu_as_new_message(dialog_manager: DialogManager) -> None:
+    """Отправить основное меню новым сообщением, не трогая клавиатуры выше."""
+    manager = root_dialog_manager(dialog_manager)
+    manager.dialog_data.pop(_NAV_BACK_STACK_KEY, None)
+    manager.dialog_data.pop("nav_back_state", None)
+
+    if manager.middleware_data.get("current_group"):
+        await manager.switch_to(MenuSG.group)
+    else:
+        await manager.switch_to(MenuSG.no_group)
+
+    bot = manager.middleware_data["bot"]
+    new_message = await manager.dialog().render(manager)
+    sent_message = await manager.message_manager.send_message(bot, new_message)
+    manager._save_last_message(_combine(new_message, sent_message))
+    manager.show_mode = ShowMode.NO_UPDATE
 
 
 async def hide_inline_keyboard(bot: Bot, chat_id: int, message_id: int) -> None:

@@ -386,16 +386,23 @@ class SqliteStorage(Repository):
             ).fetchone()
             return row_to_wish(row)
 
-    def list_open_wishes(self, group_id: int) -> list[OpenWish]:
+    def list_open_wishes(
+        self,
+        group_id: int,
+        *,
+        exclude_author_id: int | None = None,
+    ) -> list[OpenWish]:
         with self._connect() as conn:
-            rows = conn.execute(
-                """
+            query = """
                 SELECT id, text FROM wishes
                 WHERE group_id = ? AND status = ? AND {WISH_NOT_DELETED}
-                ORDER BY id
-                """.format(WISH_NOT_DELETED=WISH_NOT_DELETED),
-                (group_id, WishStatus.OPEN),
-            ).fetchall()
+            """.format(WISH_NOT_DELETED=WISH_NOT_DELETED)
+            params: list = [group_id, WishStatus.OPEN]
+            if exclude_author_id is not None:
+                query += " AND author_id != ?"
+                params.append(exclude_author_id)
+            query += " ORDER BY id"
+            rows = conn.execute(query, params).fetchall()
             return [OpenWish(id=r["id"], text=r["text"]) for r in rows]
 
     def get_wish(self, wish_id: int) -> Wish | None:

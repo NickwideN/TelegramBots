@@ -13,6 +13,7 @@ from bots.wish_bot.services.repository import (
     CannotTakeOwnWishError,
     Group,
     NotWishAuthorError,
+    NotWishTakerError,
     User,
     Wish,
     WishAlreadyTakenError,
@@ -21,6 +22,7 @@ from bots.wish_bot.services.repository import (
 )
 from bots.wish_bot.states.menu import MenuSG
 from bots.wish_bot.states.wish import AddWishSG, CompleteWishSG
+from bots.wish_bot.utils.menu_messages import send_main_menu_as_new_message
 from bots.wish_bot.utils.notify import notify_new_wish
 from bots.wish_bot.utils.send import answer_with_retry
 
@@ -263,6 +265,18 @@ async def send_open_wishes(
         await answer_with_retry(message, wish.text, reply_markup=keyboard)
 
 
+def take_wish_for_user(
+    user_id: int,
+    group_id: int,
+    wish_id: int,
+) -> Wish:
+    repo = get_repository()
+    existing = repo.get_wish(wish_id)
+    if not existing or existing.group_id != group_id:
+        raise WishNotFoundError("Wish not found")
+    return repo.take_wish(wish_id, user_id)
+
+
 @router.callback_query(F.data.startswith("take:"))
 async def callback_take_wish(
     callback: CallbackQuery,
@@ -275,14 +289,8 @@ async def callback_take_wish(
         return
 
     wish_id = int(callback.data.split(":")[1])
-    repo = get_repository()
-    existing = repo.get_wish(wish_id)
-    if not existing or existing.group_id != current_group.id:
-        await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
-        return
-
     try:
-        wish = repo.take_wish(wish_id, user.telegram_id)
+        wish = take_wish_for_user(user.telegram_id, current_group.id, wish_id)
     except CannotTakeOwnWishError:
         await callback.answer(i18n.get("message-cannot-take-own"), show_alert=True)
         return
@@ -330,6 +338,61 @@ async def callback_my_taken_list(
         )
 
 
+async def complete_wish_with_notify(
+    bot: Bot,
+    i18n: TranslatorRunner,
+    taker_id: int,
+    wish_id: int,
+    completion_text: str,
+) -> tuple[Wish, bool]:
+    repo = get_repository()
+    wish = repo.complete_wish(wish_id, taker_id, completion_text)
+    author_text = i18n.get(
+        "message-wish-completed-author",
+        wishText=wish.text,
+        message=completion_text,
+    )
+    try:
+        await bot.send_message(chat_id=wish.author_id, text=author_text)
+        return wish, True
+    except Exception:
+        return wish, False
+
+
+async def delete_wish_with_notify(
+    bot: Bot,
+    i18n: TranslatorRunner,
+    user_id: int,
+    group_id: int,
+    wish_id: int,
+    *,
+    translator_hub: TranslatorHub | None = None,
+) -> Wish:
+    repo = get_repository()
+    existing = repo.get_wish(wish_id)
+    if not existing or existing.group_id != group_id:
+        raise WishNotFoundError("Wish not found")
+
+    wish = repo.delete_wish(wish_id, user_id)
+
+    if (
+        wish.status == WishStatus.TAKEN
+        and wish.taken_by_id
+        and wish.taken_by_id != user_id
+    ):
+        taker_i18n = _taker_i18n(wish.taken_by_id, i18n, translator_hub)
+        notify_text = taker_i18n.get(
+            "message-wish-deleted-for-taker",
+            wishText=wish.text,
+        )
+        try:
+            await bot.send_message(chat_id=wish.taken_by_id, text=notify_text)
+        except Exception:
+            pass
+
+    return wish
+
+
 @router.callback_query(F.data.startswith("delete_wish:"))
 async def callback_delete_wish(
     callback: CallbackQuery,
@@ -344,14 +407,15 @@ async def callback_delete_wish(
         return
 
     wish_id = int(callback.data.split(":")[1])
-    repo = get_repository()
-    existing = repo.get_wish(wish_id)
-    if not existing or existing.group_id != current_group.id:
-        await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
-        return
-
     try:
-        wish = repo.delete_wish(wish_id, user.telegram_id)
+        await delete_wish_with_notify(
+            bot,
+            i18n,
+            user.telegram_id,
+            current_group.id,
+            wish_id,
+            translator_hub=kwargs.get("_translator_hub"),
+        )
     except NotWishAuthorError:
         await callback.answer(i18n.get("message-not-wish-author"), show_alert=True)
         return
@@ -359,43 +423,43 @@ async def callback_delete_wish(
         await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
         return
 
-    if (
-        wish.status == WishStatus.TAKEN
-        and wish.taken_by_id
-        and wish.taken_by_id != user.telegram_id
-    ):
-        taker_i18n = _taker_i18n(
-            wish.taken_by_id,
-            i18n,
-            kwargs.get("_translator_hub"),
-        )
-        notify_text = taker_i18n.get(
-            "message-wish-deleted-for-taker",
-            wishText=wish.text,
-        )
-        try:
-            await bot.send_message(chat_id=wish.taken_by_id, text=notify_text)
-        except Exception:
-            pass
-
     await callback.answer(i18n.get("message-wish-deleted"))
     if callback.message:
         await callback.message.delete()
 
 
 @router.callback_query(F.data.startswith("complete:"))
-async def callback_complete_start(
+async def callback_complete_wish(
     callback: CallbackQuery,
+    bot: Bot,
     i18n: TranslatorRunner,
-    state: FSMContext,
+    user: User,
 ) -> None:
     wish_id = int(callback.data.split(":")[1])
-    await state.set_state(CompleteWishSG.waiting_message)
-    await state.update_data(wish_id=wish_id)
+    completion_text = i18n.get("message-wish-completed-default")
+    try:
+        _, notified = await complete_wish_with_notify(
+            bot,
+            i18n,
+            user.telegram_id,
+            wish_id,
+            completion_text,
+        )
+    except NotWishTakerError:
+        await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
+        return
+    except WishNotFoundError:
+        await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
+        return
+    except WishAlreadyTakenError:
+        await callback.answer(i18n.get("message-wish-already-taken"), show_alert=True)
+        return
 
-    await callback.answer()
-    if callback.message:
-        await callback.message.answer(i18n.get("message-complete-prompt"))
+    if not notified:
+        await callback.answer(i18n.get("message-author-unreachable"), show_alert=True)
+        return
+
+    await callback.answer(i18n.get("message-wish-completed-taker"))
 
 
 @router.message(StateFilter(CompleteWishSG.waiting_message))
@@ -405,6 +469,8 @@ async def process_complete_message(
     i18n: TranslatorRunner,
     state: FSMContext,
     user: User,
+    dialog_manager: DialogManager,
+    current_group: Group | None,
 ) -> None:
     data = await state.get_data()
     wish_id = data.get("wish_id")
@@ -420,9 +486,14 @@ async def process_complete_message(
     else:
         completion_text = i18n.get("message-wish-completed-default")
 
-    repo = get_repository()
     try:
-        wish = repo.complete_wish(wish_id, user.telegram_id, completion_text)
+        _, notified = await complete_wish_with_notify(
+            bot,
+            i18n,
+            user.telegram_id,
+            wish_id,
+            completion_text,
+        )
     except WishNotFoundError:
         await answer_with_retry(message, i18n.get("message-wish-not-found"))
         await state.clear()
@@ -431,20 +502,20 @@ async def process_complete_message(
         await answer_with_retry(message, i18n.get("message-wish-already-taken"))
         await state.clear()
         return
-
-    author_text = i18n.get(
-        "message-wish-completed-author",
-        wishText=wish.text,
-        message=completion_text,
-    )
-
-    try:
-        await bot.send_message(chat_id=wish.author_id, text=author_text)
-    except Exception:
-        await answer_with_retry(message, i18n.get("message-author-unreachable"))
+    except NotWishTakerError:
+        await answer_with_retry(message, i18n.get("message-wish-not-found"))
         await state.clear()
         return
 
     await state.clear()
-    await answer_with_retry(message, i18n.get("message-wish-completed-taker"))
+    if not notified:
+        await answer_with_retry(message, i18n.get("message-author-unreachable"))
+    else:
+        await answer_with_retry(message, i18n.get("message-wish-completed-taker"))
+
+    if dialog_manager.has_context():
+        await send_main_menu_as_new_message(dialog_manager)
+    else:
+        menu_state = MenuSG.group if current_group else MenuSG.no_group
+        await dialog_manager.start(menu_state, mode=StartMode.RESET_STACK)
 

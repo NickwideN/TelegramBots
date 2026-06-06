@@ -403,16 +403,23 @@ class PostgresStorage(Repository):
             conn.commit()
             return row_to_wish(row)
 
-    def list_open_wishes(self, group_id: int) -> list[OpenWish]:
+    def list_open_wishes(
+        self,
+        group_id: int,
+        *,
+        exclude_author_id: int | None = None,
+    ) -> list[OpenWish]:
         with self._connect() as conn:
-            rows = conn.execute(
-                f"""
+            query = f"""
                 SELECT id, text FROM wishes
                 WHERE group_id = %s AND status = %s AND {WISH_NOT_DELETED}
-                ORDER BY id
-                """,
-                (group_id, WishStatus.OPEN),
-            ).fetchall()
+            """
+            params: list = [group_id, WishStatus.OPEN]
+            if exclude_author_id is not None:
+                query += " AND author_id != %s"
+                params.append(exclude_author_id)
+            query += " ORDER BY id"
+            rows = conn.execute(query, params).fetchall()
             return [OpenWish(id=r["id"], text=r["text"]) for r in rows]
 
     def get_wish(self, wish_id: int) -> Wish | None:

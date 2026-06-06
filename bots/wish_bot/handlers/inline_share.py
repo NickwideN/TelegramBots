@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F, Router
 from aiogram.types import InlineQuery, InlineQueryResultArticle, InputTextMessageContent
 from fluentogram import TranslatorHub, TranslatorRunner
@@ -5,6 +7,8 @@ from fluentogram import TranslatorHub, TranslatorRunner
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.utils.bot_info import make_invite_link
 from bots.wish_bot.utils.share import build_share_invite_text
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -41,7 +45,19 @@ async def inline_share_group(
     group = repo.get_group_by_invite(invite_code)
     user_id = inline_query.from_user.id
 
-    if not group or not _can_share_group(group, user_id):
+    if not group:
+        logger.warning("inline share: group not found for invite_code=%s", invite_code)
+        await inline_query.answer([], cache_time=0, is_personal=True)
+        return
+
+    if not _can_share_group(group, user_id):
+        logger.warning(
+            "inline share: denied user_id=%s group_id=%s public=%s admin_id=%s",
+            user_id,
+            group.id,
+            group.is_public,
+            group.admin_id,
+        )
         await inline_query.answer([], cache_time=0, is_personal=True)
         return
 

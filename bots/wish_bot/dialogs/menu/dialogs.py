@@ -2,6 +2,7 @@ from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import (
     Button,
+    Group,
     ListGroup,
     Row,
     Select,
@@ -17,7 +18,10 @@ from bots.wish_bot.dialogs.menu.getters import (
     get_group_members_data,
     get_groups_select_data,
     get_language_data,
+    get_my_taken_data,
+    get_my_wishes_data,
     get_my_groups_data,
+    get_open_wishes_data,
     get_no_group_data,
     get_public_groups_data,
     get_share_group_data,
@@ -30,7 +34,9 @@ from bots.wish_bot.dialogs.menu.handlers import (
     on_archive,
     on_create_group_name,
     on_create_group_private,
+    on_complete_taken_wish,
     on_create_group_public,
+    on_delete_my_wish,
     on_language_back,
     on_member_action,
     on_my_taken,
@@ -44,6 +50,7 @@ from bots.wish_bot.dialogs.menu.handlers import (
     on_open_public_groups,
     on_open_share,
     on_open_wishes,
+    on_take_open_wish,
     on_select_language,
     on_select_my_group,
     on_select_public_group,
@@ -171,6 +178,81 @@ group_window = Window(
     ),
     getter=get_group_data,
     state=MenuSG.group,
+)
+
+my_wishes_window = Window(
+    Format("{text}"),
+    Group(
+        ListGroup(
+            Button(
+                Format("{item[button_label]}"),
+                id="delete_my_wish",
+                on_click=on_delete_my_wish,
+            ),
+            id="my_wishes_list",
+            item_id_getter=lambda item: str(item["id"]),
+            items="wishes",
+        ),
+        width=1,
+        when="has_wishes",
+    ),
+    Button(
+        Format("{button_back}"),
+        id="my_wishes_back",
+        on_click=on_nav_back,
+    ),
+    getter=get_my_wishes_data,
+    state=MenuSG.my_wishes,
+)
+
+open_wishes_window = Window(
+    Format("{text}"),
+    Group(
+        ListGroup(
+            Button(
+                Format("{item[button_label]}"),
+                id="take_open_wish",
+                on_click=on_take_open_wish,
+            ),
+            id="open_wishes_list",
+            item_id_getter=lambda item: str(item["id"]),
+            items="wishes",
+        ),
+        width=1,
+        when="has_wishes",
+    ),
+    Button(
+        Format("{button_back}"),
+        id="open_wishes_back",
+        on_click=on_nav_back,
+    ),
+    getter=get_open_wishes_data,
+    state=MenuSG.open_wishes,
+)
+
+my_taken_window = Window(
+    Format("{text}"),
+    Group(
+        ListGroup(
+            Button(
+                Format("{item[button_label]}"),
+                id="complete_taken_wish",
+                on_click=on_complete_taken_wish,
+            ),
+            id="my_taken_list",
+            item_id_getter=lambda item: str(item["id"]),
+            items="wishes",
+        ),
+        width=1,
+        when="has_wishes",
+    ),
+    Button(
+        Format("{button_back}"),
+        id="my_taken_back",
+        on_click=on_nav_back,
+    ),
+    getter=get_my_taken_data,
+    state=MenuSG.my_taken,
 )
 
 groups_select_window = Window(
@@ -353,6 +435,9 @@ menu_dialog = Dialog(
     welcome_invite_invalid_window,
     no_group_window,
     group_window,
+    my_wishes_window,
+    open_wishes_window,
+    my_taken_window,
     groups_select_window,
     share_group_window,
     my_groups_window,

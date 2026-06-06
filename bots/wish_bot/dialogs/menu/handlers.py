@@ -1,29 +1,36 @@
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import DialogManager, ShowMode
-from aiogram_dialog.manager.message_manager import _combine
+from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from fluentogram import TranslatorHub, TranslatorRunner
 
 from bots.wish_bot.handlers.wishes import (
+    _author_display,
     _build_archive_text,
+    _taken_wish_keyboard,
+    delete_wish_with_notify,
     prompt_add_wish,
-    send_open_wishes,
-    _send_my_taken_list,
+    take_wish_for_user,
 )
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.services.fsm_storage import resolve_state
 from bots.wish_bot.services.repository import (
     CannotBlockAdminError,
     CannotBlockSelfError,
+    CannotTakeOwnWishError,
     Group,
     NotGroupAdminError,
+    NotWishAuthorError,
     User,
     UserNotMemberError,
+    WishAlreadyTakenError,
+    WishNotFoundError,
 )
 from bots.wish_bot.states.menu import MenuSG
+from bots.wish_bot.states.wish import CompleteWishSG
+from bots.wish_bot.utils.menu_messages import send_main_menu_as_new_message
 from bots.wish_bot.utils.send import answer_with_retry
 
 
@@ -49,14 +56,6 @@ _NAV_BACK_STACK_KEY = "nav_back_stack"
 def _clear_nav_back_stack(dialog_manager: DialogManager) -> None:
     dialog_manager.dialog_data.pop(_NAV_BACK_STACK_KEY, None)
     dialog_manager.dialog_data.pop("nav_back_state", None)
-
-
-async def _send_dialog_as_new_message(dialog_manager: DialogManager) -> None:
-    """Отправить текущее окно диалога новым сообщением без снятия клавиатуры с предыдущего."""
-    bot = dialog_manager.middleware_data["bot"]
-    new_message = await dialog_manager.dialog().render(dialog_manager)
-    sent_message = await dialog_manager.message_manager.send_message(bot, new_message)
-    dialog_manager._save_last_message(_combine(new_message, sent_message))
 
 
 async def _go_to_main_menu(dialog_manager: DialogManager) -> None:
@@ -189,38 +188,6 @@ async def on_open_members(
     await dialog_manager.switch_to(MenuSG.group_members)
 
 
-async def _send_my_wishes(message: Message, i18n: TranslatorRunner, user: User, group: Group) -> None:
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
-    from bots.wish_bot.handlers.wishes import _wish_list_text
-
-    repo = get_repository()
-    wishes = repo.list_wishes_by_author(user.telegram_id, group.id)
-
-    if not wishes:
-        await answer_with_retry(message, i18n.get("message-no-my-wishes"))
-        return
-
-    await answer_with_retry(message, i18n.get("message-my-wishes-header"))
-
-    for wish in wishes:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=i18n.get("button-delete"),
-                        callback_data=f"delete_wish:{wish.id}",
-                    ),
-                ],
-            ],
-        )
-        await answer_with_retry(
-            message,
-            _wish_list_text(i18n, wish),
-            reply_markup=keyboard,
-        )
-
-
 async def on_select_my_group(
     callback: CallbackQuery,
     widget,
@@ -295,16 +262,45 @@ async def on_my_wishes(
     button: Button,
     dialog_manager: DialogManager,
 ) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.my_wishes)
+
+
+async def on_delete_my_wish(
+    callback: CallbackQuery,
+    widget,
+    dialog_manager: DialogManager,
+) -> None:
     i18n = _i18n(dialog_manager)
     user = _user(dialog_manager)
     current_group = _current_group(dialog_manager)
-    await callback.answer()
-    if callback.message is None:
+    bot: Bot | None = dialog_manager.middleware_data.get("bot")
+    hub: TranslatorHub | None = dialog_manager.middleware_data.get("_translator_hub")
+
+    if current_group is None or bot is None:
+        await callback.answer(i18n.get("message-no-group"), show_alert=True)
         return
-    if current_group is None:
-        await answer_with_retry(callback.message, i18n.get("message-no-group"))
+
+    wish_id = int(dialog_manager.item_id)
+    try:
+        await delete_wish_with_notify(
+            bot,
+            i18n,
+            user.telegram_id,
+            current_group.id,
+            wish_id,
+            translator_hub=hub,
+        )
+    except NotWishAuthorError:
+        await callback.answer(i18n.get("message-not-wish-author"), show_alert=True)
         return
-    await _send_my_wishes(callback.message, i18n, user, current_group)
+    except WishNotFoundError:
+        await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
+        return
+
+    await callback.answer(i18n.get("message-wish-deleted"))
+    await dialog_manager.show()
 
 
 async def on_open_wishes(
@@ -312,10 +308,53 @@ async def on_open_wishes(
     button: Button,
     dialog_manager: DialogManager,
 ) -> None:
+    _save_nav_back(dialog_manager)
+    await callback.answer()
+    await dialog_manager.switch_to(MenuSG.open_wishes)
+
+
+async def on_take_open_wish(
+    callback: CallbackQuery,
+    widget,
+    dialog_manager: DialogManager,
+) -> None:
     i18n = _i18n(dialog_manager)
+    user = _user(dialog_manager)
+    current_group = _current_group(dialog_manager)
+
+    if current_group is None:
+        await callback.answer(i18n.get("message-no-group"), show_alert=True)
+        return
+
+    wish_id = int(dialog_manager.item_id)
+    try:
+        wish = take_wish_for_user(user.telegram_id, current_group.id, wish_id)
+    except CannotTakeOwnWishError:
+        await callback.answer(i18n.get("message-cannot-take-own"), show_alert=True)
+        return
+    except WishAlreadyTakenError:
+        await callback.answer(i18n.get("message-wish-already-taken"), show_alert=True)
+        return
+    except WishNotFoundError:
+        await callback.answer(i18n.get("message-wish-not-found"), show_alert=True)
+        return
+
+    name, username_part = _author_display(wish.author_id)
+    taken_text = i18n.get(
+        "message-taken-for",
+        name=name,
+        usernamePart=username_part,
+    )
+
     await callback.answer()
     if callback.message:
-        await send_open_wishes(callback.message, i18n, _current_group(dialog_manager))
+        await answer_with_retry(
+            callback.message,
+            taken_text,
+            reply_markup=_taken_wish_keyboard(i18n, wish.id),
+        )
+
+    await send_main_menu_as_new_message(dialog_manager)
 
 
 async def on_my_taken(
@@ -323,21 +362,25 @@ async def on_my_taken(
     button: Button,
     dialog_manager: DialogManager,
 ) -> None:
-    i18n = _i18n(dialog_manager)
-    user = _user(dialog_manager)
-    current_group = _current_group(dialog_manager)
+    _save_nav_back(dialog_manager)
     await callback.answer()
-    if callback.message is None:
-        return
-    if current_group is None:
-        await answer_with_retry(callback.message, i18n.get("message-no-group"))
-        return
-    await _send_my_taken_list(
-        callback.message,
-        i18n,
-        user.telegram_id,
-        current_group.id,
-    )
+    await dialog_manager.switch_to(MenuSG.my_taken)
+
+
+async def on_complete_taken_wish(
+    callback: CallbackQuery,
+    widget,
+    dialog_manager: DialogManager,
+) -> None:
+    i18n = _i18n(dialog_manager)
+    state = _state(dialog_manager)
+    wish_id = int(dialog_manager.item_id)
+
+    await state.set_state(CompleteWishSG.waiting_message)
+    await state.update_data(wish_id=wish_id)
+    await callback.answer()
+    if callback.message:
+        await answer_with_retry(callback.message, i18n.get("message-complete-prompt"))
 
 
 async def on_subscribe_toggle(
@@ -383,6 +426,7 @@ async def on_archive(
         return
     text = _build_archive_text(i18n, user.telegram_id, current_group.id)
     await answer_with_retry(callback.message, text)
+    await send_main_menu_as_new_message(dialog_manager)
 
 
 async def on_select_language(
@@ -465,8 +509,7 @@ async def _finish_create_group(
     await dialog_manager.switch_to(MenuSG.group_created)
     await dialog_manager.show()
     await dialog_manager.switch_to(MenuSG.group)
-    await _send_dialog_as_new_message(dialog_manager)
-    dialog_manager.show_mode = ShowMode.NO_UPDATE
+    await send_main_menu_as_new_message(dialog_manager)
 
 
 async def on_member_action(

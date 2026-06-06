@@ -5,7 +5,21 @@ from bots.wish_bot.services import get_repository
 from bots.wish_bot.services.repository import Group, User
 from bots.wish_bot.utils.bot_info import make_invite_link
 from bots.wish_bot.utils.members import member_label
-from bots.wish_bot.utils.share import build_share_invite_text, make_telegram_share_url
+from bots.wish_bot.utils.share import build_share_invite_body, make_telegram_share_url
+
+
+def _wish_preview(text: str, max_len: int = 10) -> str:
+    if len(text) <= max_len:
+        return text
+    return f"{text[:max_len]}..."
+
+
+def _author_display(author_id: int) -> tuple[str, str]:
+    repo = get_repository()
+    author = repo.get_user(author_id)
+    name = author.first_name if author and author.first_name else "—"
+    username_part = f" (@{author.username})" if author and author.username else ""
+    return name, username_part
 
 
 async def get_welcome_data(
@@ -153,11 +167,11 @@ async def get_group_created_data(
         }
 
     link = make_invite_link(current_group.invite_code)
-    invite_text = build_share_invite_text(i18n, current_group, link)
+    share_text = build_share_invite_body(i18n, current_group)
     return {
         "text": i18n.get("message-group-created", name=current_group.name, link=link),
         "button_share": i18n.get("button-share"),
-        "share_url": make_telegram_share_url(invite_text),
+        "share_url": make_telegram_share_url(link, share_text),
     }
 
 
@@ -176,7 +190,7 @@ async def get_share_group_data(
         }
 
     link = make_invite_link(current_group.invite_code)
-    invite_text = build_share_invite_text(i18n, current_group, link)
+    share_text = build_share_invite_body(i18n, current_group)
     return {
         "text": i18n.get(
             "message-share-group",
@@ -184,8 +198,148 @@ async def get_share_group_data(
             link=link,
         ),
         "button_share": i18n.get("button-share"),
-        "share_url": make_telegram_share_url(invite_text),
+        "share_url": make_telegram_share_url(link, share_text),
         "button_back": i18n.get("button-back"),
+    }
+
+
+async def get_my_wishes_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    user: User,
+    current_group: Group | None,
+    **kwargs,
+) -> dict:
+    button_back = i18n.get("button-back")
+    if current_group is None:
+        return {
+            "text": i18n.get("message-no-group"),
+            "wishes": [],
+            "has_wishes": False,
+            "button_back": button_back,
+        }
+
+    repo = get_repository()
+    wishes = repo.list_wishes_by_author(user.telegram_id, current_group.id)
+    if not wishes:
+        return {
+            "text": i18n.get("message-no-my-wishes"),
+            "wishes": [],
+            "has_wishes": False,
+            "button_back": button_back,
+        }
+
+    lines = [i18n.get("message-my-wishes-title"), ""]
+    wish_items = []
+    for index, wish in enumerate(wishes, start=1):
+        lines.append(f"{index}. {wish.text}")
+        wish_items.append({
+            "id": wish.id,
+            "button_label": f"🗑 {index}. {_wish_preview(wish.text)}",
+        })
+    lines.extend(["", i18n.get("message-my-wishes-delete-prompt")])
+
+    return {
+        "text": "\n".join(lines),
+        "wishes": wish_items,
+        "has_wishes": True,
+        "button_back": button_back,
+    }
+
+
+async def get_open_wishes_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    user: User,
+    current_group: Group | None,
+    **kwargs,
+) -> dict:
+    button_back = i18n.get("button-back")
+    if current_group is None:
+        return {
+            "text": i18n.get("message-no-group"),
+            "wishes": [],
+            "has_wishes": False,
+            "button_back": button_back,
+        }
+
+    repo = get_repository()
+    wishes = repo.list_open_wishes(
+        current_group.id,
+        exclude_author_id=user.telegram_id,
+    )
+    if not wishes:
+        return {
+            "text": i18n.get("message-no-open-wishes"),
+            "wishes": [],
+            "has_wishes": False,
+            "button_back": button_back,
+        }
+
+    lines = [i18n.get("message-open-wishes-header"), ""]
+    wish_items = []
+    for index, wish in enumerate(wishes, start=1):
+        lines.append(f"{index}. {wish.text}")
+        wish_items.append({
+            "id": wish.id,
+            "button_label": f"✋ {index}. {_wish_preview(wish.text)}",
+        })
+    lines.extend(["", i18n.get("message-open-wishes-take-prompt")])
+
+    return {
+        "text": "\n".join(lines),
+        "wishes": wish_items,
+        "has_wishes": True,
+        "button_back": button_back,
+    }
+
+
+async def get_my_taken_data(
+    dialog_manager: DialogManager,
+    i18n: TranslatorRunner,
+    user: User,
+    current_group: Group | None,
+    **kwargs,
+) -> dict:
+    button_back = i18n.get("button-back")
+    if current_group is None:
+        return {
+            "text": i18n.get("message-no-group"),
+            "wishes": [],
+            "has_wishes": False,
+            "button_back": button_back,
+        }
+
+    repo = get_repository()
+    wishes = repo.list_taken_by_user(user.telegram_id, current_group.id)
+    if not wishes:
+        return {
+            "text": i18n.get("message-no-taken-wishes"),
+            "wishes": [],
+            "has_wishes": False,
+            "button_back": button_back,
+        }
+
+    lines = [i18n.get("message-taken-wishes-header"), ""]
+    wish_items = []
+    for index, wish in enumerate(wishes, start=1):
+        name, username_part = _author_display(wish.author_id)
+        lines.append(f"{index}. {wish.text}")
+        lines.append(
+            i18n.get("message-taken-wish-for", name=name, usernamePart=username_part),
+        )
+        lines.append("")
+        wish_items.append({
+            "id": wish.id,
+            "button_label": f"✅ {index}. {_wish_preview(wish.text)}",
+        })
+    lines.append(i18n.get("message-taken-wishes-complete-prompt"))
+
+    return {
+        "text": "\n".join(lines),
+        "wishes": wish_items,
+        "has_wishes": True,
+        "button_back": button_back,
     }
 
 

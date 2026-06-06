@@ -117,12 +117,12 @@ message-share-group =
 message-share-invite-public-body =
     🎁 Присоединяйся к группе желаний { $name }!
 
-    Здесь участники анонимно загадывают желания и исполняют желания друг друга.
+    Здесь участники анонимно загадывают желания и исполняют желания друг друга
 
 message-share-invite-private-body =
     🎁 Приглашаю в группу желаний { $name }
 
-    В группе можно анонимно загадывать желания и исполнять желания других участников.
+    В группе можно анонимно загадывать желания и исполнять желания других участников
 
 message-share-invite-public =
     { message-share-invite-public-body }
@@ -154,6 +154,8 @@ message-wish-added = Желание добавлено.
 message-wish-empty = Текст желания не может быть пустым.
 message-no-open-wishes = Открытых желаний пока нет.
 message-open-wishes-header = <b>Доступные желания</b>:
+message-open-wishes-take-prompt = Нажмите на желание, которое хотите взять:
+message-wish-taken = Желание взято.
 
 message-taken-for =
     Вы взяли желание. Выполняйте для: <b>{ $name }</b>{ $usernamePart }
@@ -163,6 +165,8 @@ message-wish-already-taken = Это желание уже взяли.
 message-wish-not-found = Желание не найдено.
 
 message-no-my-wishes = У вас нет желаний в этой группе.
+message-my-wishes-title = <b>Ваши желания:</b>
+message-my-wishes-delete-prompt = Нажмите на номер желания, которое хотите удалить:
 message-my-wishes-header = <b>Ваши желания:</b>
 message-wish-deleted = Желание удалено.
 message-not-wish-author = Удалить может только автор желания.
@@ -172,6 +176,8 @@ message-wish-deleted-for-taker =
 
 message-no-taken-wishes = У вас нет взятых желаний в этой группе.
 message-taken-wishes-header = <b>Ваши взятые желания:</b>
+message-taken-wishes-complete-prompt = Нажмите на желание, которое хотите отметить выполненным:
+message-taken-wish-for =    Для: <b>{ $name }</b>{ $usernamePart }
 message-taken-wish-item =
     { $wishText }
 
@@ -218,18 +224,18 @@ button-private = Приватная
 button-toggle-public = Сделать публичной
 button-toggle-private = Сделать приватной
 button-show-invite = Показать ссылку
-button-group-members = 👥 Участники группы (админ)
+button-group-members = 👥 Участники группы 👑
 button-groups = 📂 Группы
 button-share-group = 🔗 Поделиться группой
-button-share-group-admin = 🔗 Поделиться группой (админ)
+button-share-group-admin = 🔗 Поделиться группой 👑
 button-share = 📤 Поделиться
 button-start = 🚀 Начать
 button-my-groups = 📂 Мои группы
 button-language = 🌐 Язык
 button-my-wishes = 📋 Мои желания
-button-subscribe = 🔔 Получать уведомления
-button-unsubscribe = 🔕 Отключить уведомления
-button-archive = ✅ Архив выполненных желаний
+button-subscribe = 🔕 Уведомления выключены
+button-unsubscribe = 🔔 Уведомления включены
+button-archive = ✅ Архив желаний
 button-back = Назад
 button-block = Заблокировать
 button-unblock = Разблокировать

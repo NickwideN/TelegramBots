@@ -154,6 +154,8 @@ message-wish-added = Wish added.
 message-wish-empty = Wish text cannot be empty.
 message-no-open-wishes = No open wishes yet.
 message-open-wishes-header = <b>Open wishes</b> (anonymous):
+message-open-wishes-take-prompt = Tap the wish you want to take:
+message-wish-taken = Wish taken.
 
 message-taken-for =
     You took this wish. Fulfill it for: <b>{ $name }</b>{ $usernamePart }
@@ -163,6 +165,8 @@ message-wish-already-taken = This wish was already taken.
 message-wish-not-found = Wish not found.
 
 message-no-my-wishes = You have no wishes in this group.
+message-my-wishes-title = <b>Your wishes:</b>
+message-my-wishes-delete-prompt = Tap the number of the wish you want to delete:
 message-my-wishes-header = <b>Your wishes:</b>
 message-wish-deleted = Wish deleted.
 message-not-wish-author = Only the wish author can delete it.
@@ -172,6 +176,8 @@ message-wish-deleted-for-taker =
 
 message-no-taken-wishes = You have no taken wishes in this group.
 message-taken-wishes-header = <b>Your taken wishes:</b>
+message-taken-wishes-complete-prompt = Tap the wish you want to mark as completed:
+message-taken-wish-for =    For: <b>{ $name }</b>{ $usernamePart }
 message-taken-wish-item =
     { $wishText }
 

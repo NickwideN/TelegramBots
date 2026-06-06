@@ -201,7 +201,12 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    def list_open_wishes(self, group_id: int) -> list[OpenWish]:
+    def list_open_wishes(
+        self,
+        group_id: int,
+        *,
+        exclude_author_id: int | None = None,
+    ) -> list[OpenWish]:
         pass
 
     @abstractmethod
