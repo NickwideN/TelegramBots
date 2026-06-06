@@ -5,6 +5,7 @@ from bots.wish_bot.services import get_repository
 from bots.wish_bot.services.repository import Group, User
 from bots.wish_bot.utils.bot_info import make_invite_link
 from bots.wish_bot.utils.members import member_label
+from bots.wish_bot.utils.share import build_share_invite_text, make_telegram_share_url
 
 
 async def get_welcome_data(
@@ -148,14 +149,15 @@ async def get_group_created_data(
         return {
             "text": i18n.get("message-no-group"),
             "button_share": i18n.get("button-share"),
-            "share_query": "",
+            "share_url": "",
         }
 
     link = make_invite_link(current_group.invite_code)
+    invite_text = build_share_invite_text(i18n, current_group, link)
     return {
         "text": i18n.get("message-group-created", name=current_group.name, link=link),
         "button_share": i18n.get("button-share"),
-        "share_query": f"share_{current_group.invite_code}",
+        "share_url": make_telegram_share_url(invite_text),
     }
 
 
@@ -169,11 +171,12 @@ async def get_share_group_data(
         return {
             "text": i18n.get("message-no-group"),
             "button_share": i18n.get("button-share"),
-            "share_query": "",
+            "share_url": "",
             "button_back": i18n.get("button-back"),
         }
 
     link = make_invite_link(current_group.invite_code)
+    invite_text = build_share_invite_text(i18n, current_group, link)
     return {
         "text": i18n.get(
             "message-share-group",
@@ -181,7 +184,7 @@ async def get_share_group_data(
             link=link,
         ),
         "button_share": i18n.get("button-share"),
-        "share_query": f"share_{current_group.invite_code}",
+        "share_url": make_telegram_share_url(invite_text),
         "button_back": i18n.get("button-back"),
     }
 

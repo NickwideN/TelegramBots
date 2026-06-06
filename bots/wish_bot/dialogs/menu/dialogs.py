@@ -5,7 +5,7 @@ from aiogram_dialog.widgets.kbd import (
     ListGroup,
     Row,
     Select,
-    SwitchInlineQueryChosenChatButton,
+    Url,
 )
 from aiogram_dialog.widgets.text import Format
 
@@ -201,12 +201,9 @@ groups_select_window = Window(
 
 share_group_window = Window(
     Format("{text}"),
-    SwitchInlineQueryChosenChatButton(
+    Url(
         Format("{button_share}"),
-        Format("{share_query}"),
-        allow_user_chats=True,
-        allow_group_chats=True,
-        allow_channel_chats=False,
+        Format("{share_url}"),
         id="share_invite",
     ),
     Button(
@@ -341,12 +338,9 @@ create_visibility_window = Window(
 
 group_created_window = Window(
     Format("{text}"),
-    SwitchInlineQueryChosenChatButton(
+    Url(
         Format("{button_share}"),
-        Format("{share_query}"),
-        allow_user_chats=True,
-        allow_group_chats=True,
-        allow_channel_chats=False,
+        Format("{share_url}"),
         id="share_invite_created",
     ),
     getter=get_group_created_data,

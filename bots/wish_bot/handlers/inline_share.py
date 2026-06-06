@@ -4,6 +4,7 @@ from fluentogram import TranslatorHub, TranslatorRunner
 
 from bots.wish_bot.services import get_repository
 from bots.wish_bot.utils.bot_info import make_invite_link
+from bots.wish_bot.utils.share import build_share_invite_text
 
 router = Router()
 
@@ -46,11 +47,11 @@ async def inline_share_group(
 
     i18n = _user_i18n(user_id, _translator_hub)
     link = make_invite_link(group.invite_code)
-    message_text = i18n.get("message-share-invite", name=group.name, link=link)
+    message_text = build_share_invite_text(i18n, group, link)
 
     result = InlineQueryResultArticle(
         id=f"share_{group.id}",
-        title=i18n.get("button-share-group"),
+        title=i18n.get("button-share"),
         description=group.name,
         input_message_content=InputTextMessageContent(message_text=message_text),
     )

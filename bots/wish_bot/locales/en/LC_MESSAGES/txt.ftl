@@ -108,12 +108,34 @@ message-no-group-members = There are no members in the group.
 member-role-admin = admin
 message-groups-select = <b>Groups</b>
 message-share-group =
-    Group <b>{ $name }</b>
+    🔗 Invitation to group <b>{ $name }</b>
 
+    Send this link to people you want to add to the group
+
+    <code>{ $link }</code>
+
+message-share-invite-public-body =
+    🎁 Join the wish group { $name }!
+
+    Here members anonymously make wishes and fulfill each other's wishes.
+
+message-share-invite-private-body =
+    🎁 You're invited to the wish group { $name }
+
+    In this group you can anonymously make wishes and fulfill other members' wishes.
+
+message-share-invite-public =
+    { message-share-invite-public-body }
+
+    Join:
     { $link }
-message-share-invite =
-    Join group «{ $name }» in Wish Bot:
+
+message-share-invite-private =
+    { message-share-invite-private-body }
+
+    Invite link:
     { $link }
+
 message-my-groups = <b>My groups</b>
 message-no-my-groups = You are not a member of any group yet.
 message-public-groups = <b>Public groups</b>
@@ -200,7 +222,7 @@ button-group-members = 👥 Group members (admin)
 button-groups = 📂 Groups
 button-share-group = 🔗 Share group
 button-share-group-admin = 🔗 Share group (admin)
-button-share = Share
+button-share = 📤 Share
 button-start = 🚀 Start
 button-my-groups = 📂 My groups
 button-language = 🌐 Language

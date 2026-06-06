@@ -108,12 +108,34 @@ message-no-group-members = В группе нет участников.
 member-role-admin = админ
 message-groups-select = <b>Группы</b>
 message-share-group =
-    Группа <b>{ $name }</b>
+    🔗 Приглашение в группу <b>{ $name }</b>
 
+    Отправьте эту ссылку людям, которых хотите добавить в группу
+
+    <code>{ $link }</code>
+
+message-share-invite-public-body =
+    🎁 Присоединяйся к группе желаний { $name }!
+
+    Здесь участники анонимно загадывают желания и исполняют желания друг друга.
+
+message-share-invite-private-body =
+    🎁 Приглашаю в группу желаний { $name }
+
+    В группе можно анонимно загадывать желания и исполнять желания других участников.
+
+message-share-invite-public =
+    { message-share-invite-public-body }
+
+    Вступить:
     { $link }
-message-share-invite =
-    Присоединяйтесь к группе «{ $name }» в Боте желаний:
+
+message-share-invite-private =
+    { message-share-invite-private-body }
+
+    Ссылка для вступления:
     { $link }
+
 message-my-groups = <b>Мои группы</b>
 message-no-my-groups = Вы пока не состоите ни в одной группе.
 message-public-groups = <b>Публичные группы</b>
@@ -200,7 +222,7 @@ button-group-members = 👥 Участники группы (админ)
 button-groups = 📂 Группы
 button-share-group = 🔗 Поделиться группой
 button-share-group-admin = 🔗 Поделиться группой (админ)
-button-share = Поделиться
+button-share = 📤 Поделиться
 button-start = 🚀 Начать
 button-my-groups = 📂 Мои группы
 button-language = 🌐 Язык
