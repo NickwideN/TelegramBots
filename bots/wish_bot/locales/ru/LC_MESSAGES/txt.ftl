@@ -1,9 +1,11 @@
 # Описание бота
 help-text =
     👋 Привет! Я <b>Бот Желаний</b> ✨
-
-    В группе каждый может добавить желание. Участники видят общий анонимный список и могут взять желание на исполнение. Когда выполните — отправьте автору сообщение (анонимно)
-
+    
+    В группе каждый может анонимно загадать желание. Участники видят общий список и могут взять желание на исполнение.
+    
+    Когда желание будет выполнено, автор получит анонимное сообщение.
+    
     Чтобы открыть меню, нажмите /menu
 
 message-welcome =
@@ -25,11 +27,9 @@ message-welcome-invite =
 message-welcome-invite-invalid =
     👋 Привет! Я <b>Бот Желаний</b> ✨
 
-    Здесь можно анонимно загадывать желания и исполнять желания других участников.
-
-    Вас пригласили в группу, но ссылка указана неверно или уже недействительна.
-
-    Попросите администратора отправить новую ссылку или нажмите кнопку «Начать» 👇
+    Ссылка-приглашение не сработала: она неверная или уже недействительна.
+    
+    Попросите администратора отправить новую ссылку или нажмите «Начать» 👇
 
 message-menu-no-group =
     Для работы с желаниями нужно состоять хотя бы в одной группе.
@@ -54,18 +54,13 @@ message-menu-group-admin =
 message-menu-group-member =
     Группа: <b>{ $groupName }</b>
 
-message-joined-welcome =
-    Привет! Я <b>Бот Желаний</b> 💫
-
-    Добро пожаловать в группу <b>{ $groupName }</b>
-    В этом боте каждый может анонимно загадать желание и исполнить чужое. Попробуй загадать первое желание
 message-group-not-found = Группа не найдена. Проверьте ссылку.
 message-did-not-understand = Упс, не понял тебя
 
 # Группы
 message-create-group-name = Введите название группы:
 message-create-group-visibility = Выберите видимость группы:
-message-create-group-expired = Сначала создайте группу заново через меню
+message-create-group-expired = Создание группы прервано. Начните заново через меню
 message-group-created =
     🎉 Группа { $name } создана.
 
@@ -77,23 +72,11 @@ message-group-created =
 
     <code>{ $link }</code>
 
-message-current-group =
-    Текущая группа: <b>{ $name }</b>
-    { $visibility }
-
-message-current-group-admin =
-    Текущая группа: <b>{ $name }</b>
-    { $visibility }
-
-    Ссылка для приглашения:
-    { $link }
-
 visibility-public = Публичная — видна в списке публичных групп
 visibility-private = Приватная — только по ссылке
 
 message-invite-link = Ссылка приглашения:
 message-no-public-groups = Публичных групп пока нет.
-message-public-group-already-member = <b>{ $name }</b> — вы уже в этой группе
 
 message-group-admin =
     <b>Управление группой «{ $name }»</b>
@@ -103,7 +86,6 @@ message-group-admin =
 message-group-not-admin = Только администратор группы может менять настройки.
 message-group-visibility-changed = Видимость группы обновлена.
 
-message-group-members-header = <b>Участники текущей группы</b>
 message-group-members-title = Участники группы { $groupName }
 message-group-members-admins-header = 👑 Админы:
 message-group-members-members-header = 👥 Участники:
@@ -168,13 +150,15 @@ message-blocked-in-group = Вы заблокированы в группе «{ $
 
 # Желания
 message-add-wish-prompt = Напишите текст желания:
-message-wish-added = Желание добавлено, скоро кто-то его возьмёт😉
+message-wish-added = 
+    Желание добавлено ✨
+
+    Теперь его увидят участники группы.
+
 message-wish-empty = Текст желания не может быть пустым
 message-no-open-wishes = Открытых желаний пока нет
 message-open-wishes-header = <b>Доступные желания</b>:
 message-open-wishes-take-prompt = Нажмите на желание, которое хотите взять:
-message-wish-taken = Желание взято.
-
 message-taken-for =
     Вы взяли желание. Выполняйте для: <b>{ $name }</b>{ $usernamePart }
 
@@ -185,7 +169,6 @@ message-wish-not-found = Желание не найдено.
 message-no-my-wishes = У вас нет желаний в этой группе.
 message-my-wishes-title = <b>Ваши желания:</b>
 message-my-wishes-delete-prompt = Нажмите на номер желания, которое хотите удалить:
-message-my-wishes-header = <b>Ваши желания:</b>
 message-wish-deleted = Желание удалено.
 message-not-wish-author = Удалить может только автор желания.
 message-wish-deleted-for-taker =
@@ -200,10 +183,6 @@ message-taken-wish-item =
     { $wishText }
 
     Для: <b>{ $name }</b>{ $usernamePart }
-
-wish-status-open = открыто
-wish-status-taken = взято
-wish-status-completed = выполнено
 
 message-complete-prompt = Напишите сообщение для автора желания (или отправьте /skip для стандартной фразы):
 message-wish-completed-taker = Желание отмечено выполненным.
@@ -226,8 +205,6 @@ message-archive-fulfilled-item = • «{ $wishText }» — для { $name }{ $us
 
 message-subscribed = Вы подписаны на новые желания в группе «{ $name }».
 message-unsubscribed = Вы отписаны от новых желаний в группе «{ $name }».
-message-already-subscribed = Вы уже подписаны на новые желания в этой группе.
-message-not-subscribed = Вы не подписаны на новые желания в этой группе.
 message-new-wish-notification =
     🔔 Новое желание в группе <b>{ $groupName }</b>:
     { $wishText }
@@ -236,7 +213,6 @@ message-new-wish-notification =
 button-take = Взять
 button-complete = Выполнено
 button-my-taken = 🤝 Мои взятые желания
-button-delete = Удалить
 button-public = Публичная
 button-private = Приватная
 button-toggle-public = Сделать публичной
@@ -259,7 +235,6 @@ button-block = Заблокировать
 button-unblock = Разблокировать
 button-language-russian = Русский
 button-language-english = English
-button-join-group = Вступить: { $name }
 button-make-wish = ✨ Загадать желание
 button-open-wishes = 🎁 Доступные желания
 button-public-groups = 🌍 Публичные группы

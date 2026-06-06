@@ -1,8 +1,10 @@
 # Bot description
 help-text =
-    Hi! I'm the <b>Wish Bot</b>.
+    👋 Hi! I'm the <b>Wish Bot</b> ✨
 
-    In a group, anyone can add a wish. Members see an anonymous list and can take a wish to fulfill. When done, send the author a message (anonymously)
+    In a group, anyone can anonymously make a wish. Members see a shared list and can take a wish to fulfill.
+
+    When a wish is fulfilled, the author receives an anonymous message.
 
     To open the menu, tap /menu
 
@@ -25,11 +27,9 @@ message-welcome-invite =
 message-welcome-invite-invalid =
     👋 Hi! I'm the <b>Wish Bot</b> ✨
 
-    Here you can anonymously make wishes and fulfill wishes for other members.
+    The invite link didn't work: it's invalid or no longer active.
 
-    You were invited to a group, but the link is incorrect or no longer valid.
-
-    Ask the administrator for a new link or tap the «Start» button 👇
+    Ask the administrator for a new link or tap «Start» 👇
 
 message-menu-no-group =
     To work with wishes, you need to be a member of at least one group.
@@ -54,22 +54,17 @@ message-menu-group-admin =
 message-menu-group-member =
     Group: <b>{ $groupName }</b>
 
-message-joined-welcome =
-    Hi! I'm the <b>Wish Bot</b> 💫
-
-    Welcome to group <b>{ $groupName }</b>
-    In this bot, everyone can anonymously make a wish and fulfill someone else's. Try making your first wish!
 message-group-not-found = Group not found. Check the link.
 message-did-not-understand = Oops, I didn't understand you
 
 # Groups
 message-create-group-name = Enter the group name:
 message-create-group-visibility = Choose group visibility:
-message-create-group-expired = Please create a group again via the menu
+message-create-group-expired = Group creation was interrupted. Start again from the menu
 message-group-created =
     🎉 Group { $name } created.
 
-    👑 You are the admin of this group.
+    👑 You are the administrator of this group.
 
     You're the only member for now. Invite others to start exchanging wishes.
 
@@ -77,33 +72,20 @@ message-group-created =
 
     <code>{ $link }</code>
 
-message-current-group =
-    Current group: <b>{ $name }</b>
-    { $visibility }
-
-message-current-group-admin =
-    Current group: <b>{ $name }</b>
-    { $visibility }
-
-    Invite link:
-    { $link }
-
 visibility-public = Public — listed in public groups
 visibility-private = Private — invite link only
 
 message-invite-link = Invite link:
 message-no-public-groups = No public groups yet.
-message-public-group-already-member = <b>{ $name }</b> — you are already in this group
 
 message-group-admin =
     <b>Manage group «{ $name }»</b>
     { $visibility }
     { $link }
 
-message-group-not-admin = Only the group admin can change settings.
+message-group-not-admin = Only the group administrator can change settings.
 message-group-visibility-changed = Group visibility updated.
 
-message-group-members-header = <b>Group members</b>
 message-group-members-title = Members of group { $groupName }
 message-group-members-admins-header = 👑 Admins:
 message-group-members-members-header = 👥 Members:
@@ -135,12 +117,12 @@ message-share-group =
 message-share-invite-public-body =
     🎁 Join the wish group { $name }!
 
-    Here members anonymously make wishes and fulfill each other's wishes.
+    Here members anonymously make wishes and fulfill each other's wishes
 
 message-share-invite-private-body =
     🎁 You're invited to the wish group { $name }
 
-    In this group you can anonymously make wishes and fulfill other members' wishes.
+    In this group you can anonymously make wishes and fulfill other members' wishes
 
 message-share-invite-public =
     { message-share-invite-public-body }
@@ -163,18 +145,20 @@ message-member-not-found = Member not found.
 message-cannot-block-self = You cannot block yourself.
 message-cannot-block-admin = You cannot block the administrator.
 message-user-blocked =
-    The administrator of group «{ $groupName }» has blocked you. You were removed and cannot join until unblocked.
+    The administrator of group «{ $groupName }» has blocked you. You were removed from the group and cannot join until unblocked.
 message-blocked-in-group = You are blocked in group «{ $name }» and cannot join.
 
 # Wishes
 message-add-wish-prompt = Enter the wish text:
-message-wish-added = Wish added.
-message-wish-empty = Wish text cannot be empty.
-message-no-open-wishes = No open wishes yet.
-message-open-wishes-header = <b>Open wishes</b> (anonymous):
-message-open-wishes-take-prompt = Tap the wish you want to take:
-message-wish-taken = Wish taken.
+message-wish-added =
+    Wish added ✨
 
+    Group members will see it soon.
+
+message-wish-empty = Wish text cannot be empty
+message-no-open-wishes = No open wishes yet
+message-open-wishes-header = <b>Available wishes</b>:
+message-open-wishes-take-prompt = Tap the wish you want to take:
 message-taken-for =
     You took this wish. Fulfill it for: <b>{ $name }</b>{ $usernamePart }
 
@@ -185,7 +169,6 @@ message-wish-not-found = Wish not found.
 message-no-my-wishes = You have no wishes in this group.
 message-my-wishes-title = <b>Your wishes:</b>
 message-my-wishes-delete-prompt = Tap the number of the wish you want to delete:
-message-my-wishes-header = <b>Your wishes:</b>
 message-wish-deleted = Wish deleted.
 message-not-wish-author = Only the wish author can delete it.
 message-wish-deleted-for-taker =
@@ -200,10 +183,6 @@ message-taken-wish-item =
     { $wishText }
 
     For: <b>{ $name }</b>{ $usernamePart }
-
-wish-status-open = open
-wish-status-taken = taken
-wish-status-completed = completed
 
 message-complete-prompt = Write a message for the wish author (or send /skip for the default text):
 message-wish-completed-taker = Wish marked as completed.
@@ -226,8 +205,6 @@ message-archive-fulfilled-item = • «{ $wishText }» — for { $name }{ $usern
 
 message-subscribed = You subscribed to new wishes in group «{ $name }».
 message-unsubscribed = You unsubscribed from new wishes in group «{ $name }».
-message-already-subscribed = You are already subscribed to new wishes in this group.
-message-not-subscribed = You are not subscribed to new wishes in this group.
 message-new-wish-notification =
     🔔 New wish in group <b>{ $groupName }</b>:
     { $wishText }
@@ -236,30 +213,28 @@ message-new-wish-notification =
 button-take = Take
 button-complete = Done
 button-my-taken = 🤝 My taken wishes
-button-delete = Delete
 button-public = Public
 button-private = Private
 button-toggle-public = Make public
 button-toggle-private = Make private
 button-show-invite = Show invite link
-button-group-members = 👥 Group members (admin)
+button-group-members = 👥 Group members 👑
 button-groups = 📂 Groups
 button-share-group = 🔗 Share group
-button-share-group-admin = 🔗 Share group (admin)
+button-share-group-admin = 🔗 Share group 👑
 button-share = 📤 Share
 button-start = 🚀 Start
 button-my-groups = 📂 My groups
 button-language = 🌐 Language
 button-my-wishes = 📋 My wishes
-button-subscribe = 🔔 Get notifications
-button-unsubscribe = 🔕 Disable notifications
-button-archive = ✅ Archive of completed wishes
+button-subscribe = 🔕 Notifications off
+button-unsubscribe = 🔔 Notifications on
+button-archive = ✅ Wish archive
 button-back = Back
 button-block = Block
 button-unblock = Unblock
 button-language-russian = Русский
 button-language-english = English
-button-join-group = Join: { $name }
 button-make-wish = ✨ Make a wish
 button-open-wishes = 🎁 Available wishes
 button-public-groups = 🌍 Public groups

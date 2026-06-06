@@ -42,15 +42,6 @@ def _taker_i18n(
     return fallback
 
 
-def _wish_list_text(i18n: TranslatorRunner, wish: Wish) -> str:
-    status_key = f"wish-status-{wish.status}"
-    try:
-        status_label = i18n.get(status_key)
-    except Exception:
-        status_label = wish.status
-    return f"{wish.text}\n<i>{status_label}</i>"
-
-
 def _format_datetime(dt: datetime | None) -> str:
     if not dt:
         return "—"
