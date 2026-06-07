@@ -54,6 +54,8 @@ message-menu-group-admin =
 message-menu-group-member =
     Group: <b>{ $groupName }</b>
 
+    Members: { $memberCount }
+
 message-group-not-found = Group not found. Check the link.
 message-did-not-understand = Oops, I didn't understand you
 

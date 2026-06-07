@@ -117,15 +117,19 @@ async def get_group_data(
     else:
         button_share_group = ""
 
+    member_count = len(repo.list_group_members(current_group.id))
     if is_admin:
-        member_count = len(repo.list_group_members(current_group.id))
         text = i18n.get(
             "message-menu-group-admin",
             groupName=current_group.name,
             memberCount=member_count,
         )
     else:
-        text = i18n.get("message-menu-group-member", groupName=current_group.name)
+        text = i18n.get(
+            "message-menu-group-member",
+            groupName=current_group.name,
+            memberCount=member_count,
+        )
 
     return {
         **base,
