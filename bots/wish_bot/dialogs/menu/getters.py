@@ -8,7 +8,7 @@ from bots.wish_bot.utils.members import member_display_name, member_label, membe
 from bots.wish_bot.utils.share import build_share_invite_body, make_telegram_share_url
 
 
-def _wish_preview(text: str, max_len: int = 10) -> str:
+def _wish_preview(text: str, max_len: int = 30) -> str:
     if len(text) <= max_len:
         return text
     return f"{text[:max_len]}..."
